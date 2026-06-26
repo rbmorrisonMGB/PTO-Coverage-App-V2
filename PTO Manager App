@@ -1,0 +1,2971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTO Coverage Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --mgb-teal: #01828E;
+    --mgb-teal-dark: #016b76;
+    --mgb-teal-soft: #E1F5EE;
+    --mgb-blue: #003A96;
+    --mgb-blue-soft: #E6F1FB;
+    --mgb-bone: #EAE7DD;
+    --bg: #f4f2ee;
+    --surface: #ffffff;
+    --surface2: #f9f8f5;
+    --border: #e0ddd5;
+    --border2: #ccc9c0;
+    --text: #0f0e0c;
+    --text2: #4a4844;
+    --text3: #888580;
+    --accent: var(--mgb-teal);
+    --accent-soft: var(--mgb-teal-soft);
+    --accent2: #8b4513;
+    --accent2-soft: #fdf0e8;
+    --danger: #BC343E;
+    --danger-soft: #FCEBEB;
+    --info: var(--mgb-blue);
+    --info-soft: var(--mgb-blue-soft);
+    --pending: #854F0B;
+    --pending-soft: #FAEEDA;
+    --success: #085041;
+    --success-soft: #E1F5EE;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 3px 8px rgba(0,0,0,0.03);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.05);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+    font-size: 14px;
+  }
+
+  /* Header */
+  .app-header {
+    background: var(--mgb-teal);
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .app-header-inner { display: flex; align-items: center; gap: 0.85rem; }
+  .app-header-icon {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem; flex-shrink: 0;
+  }
+  .app-header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; color: white; }
+  .app-header p { font-size: 0.72rem; color: rgba(255,255,255,0.65); margin-top: 0.1rem; }
+  .app-header-badge {
+    background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9);
+    font-size: 0.72rem; font-weight: 500; padding: 0.25rem 0.75rem;
+    border-radius: 999px; border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* Stat bar */
+  .stat-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    overflow-x: auto;
+  }
+  .stat-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.6rem 1.5rem 0.6rem 0;
+    margin-right: 1.5rem;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .stat-item:last-child { border-right: none; margin-right: 0; }
+  .stat-item-val { font-size: 1.4rem; font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
+  .stat-item-label { font-size: 0.72rem; color: var(--text3); line-height: 1.3; max-width: 80px; }
+  .stat-teal { color: var(--mgb-teal); }
+  .stat-amber { color: var(--pending); }
+  .stat-blue { color: var(--mgb-blue); }
+  .stat-gray { color: var(--text3); }
+
+  /* Tabs */
+  .tabs-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    background: none; border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text3);
+    padding: 0.75rem 1.1rem;
+    font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; white-space: nowrap;
+    font-family: inherit; transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--bg); }
+  .tab-btn.active { color: var(--mgb-teal); border-bottom-color: var(--mgb-teal); font-weight: 600; }
+
+  /* Main layout */
+  .app-body { max-width: 1200px; margin: 0 auto; padding: 1.25rem 2rem; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 1rem; color: var(--text3);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .card-title .icon { font-size: 1rem; color: var(--mgb-teal); }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+  .form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.72rem; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
+  input[type="text"], input[type="date"], select, textarea {
+    font-family: inherit; font-size: 0.875rem; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 0.5rem 0.75rem;
+    transition: border-color 0.15s, box-shadow 0.15s; width: 100%;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--mgb-teal); box-shadow: 0 0 0 3px rgba(1,130,142,0.1); }
+  input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--mgb-teal); }
+  .checkbox-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text2); }
+
+  /* Buttons */
+  .btn {
+    font-family: inherit; font-size: 0.82rem; font-weight: 500;
+    padding: 0.48rem 0.9rem; border-radius: var(--radius-sm);
+    border: 1px solid transparent; cursor: pointer;
+    transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-primary { background: var(--mgb-teal); color: white; border-color: var(--mgb-teal); }
+  .btn-primary:hover { background: var(--mgb-teal-dark); }
+  .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border2); }
+  .btn-secondary:hover { background: var(--bg); border-color: var(--text3); }
+  .btn-danger { background: var(--danger-soft); color: var(--danger); border-color: #f5c6c3; }
+  .btn-danger:hover { background: #fce8e6; }
+  .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
+  .btn-approve { background: var(--success-soft); color: var(--success); border-color: #9FE1CB; }
+  .btn-approve:hover { background: #c4edd9; }
+  .btn-reject { background: var(--danger-soft); color: var(--danger); border-color: #f5c6c3; }
+  .btn-reject:hover { background: #fce8e6; }
+  .btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead th {
+    background: var(--surface2); padding: 0.6rem 0.9rem;
+    text-align: left; font-weight: 500; color: var(--text3);
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tbody td { padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f7f5f0; }
+  .empty-row td { text-align: center; color: var(--text3); padding: 2.5rem; font-size: 0.875rem; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 0.18rem 0.6rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 600; white-space: nowrap; letter-spacing: 0.02em;
+  }
+  .badge-pending { background: var(--pending-soft); color: var(--pending); }
+  .badge-approved { background: var(--success-soft); color: var(--success); }
+  .badge-rejected { background: var(--danger-soft); color: var(--danger); }
+  .badge-override { background: #fdf0e8; color: #854F0B; }
+
+  /* Score bars */
+  .score-bar-wrap { display: flex; align-items: center; gap: 0.75rem; }
+  .score-bar-bg { flex: 1; height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .score-bar-fill { height: 100%; background: var(--mgb-teal); border-radius: 999px; transition: width 0.4s; }
+  .score-val { font-family: 'DM Mono', monospace; font-size: 0.82rem; color: var(--text3); min-width: 36px; text-align: right; }
+
+  /* Calendar */
+  .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .calendar-month { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.03em; color: var(--text); }
+  .cal-table { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .cal-table th { background: var(--mgb-teal); color: white; padding: 0.5rem 0.75rem; font-size: 0.75rem; text-align: center; font-weight: 500; letter-spacing: 0.04em; border-radius: 4px; }
+  .cal-date-row td { padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; color: var(--text3); background: var(--surface2); border-radius: 4px; text-align: center; border: 1px solid var(--border); }
+  .cal-body-row td { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.4rem; min-height: 60px; vertical-align: top; min-width: 80px; }
+  .cal-body-row td.has-pto { background: #f0faf9; }
+  .cal-body-row td.coverage-col { background: var(--surface2); min-width: 180px; }
+  .cal-chip { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; color: #0f0e0c; margin-bottom: 2px; margin-right: 2px; }
+  .cov-block { border: 1px solid var(--border); background: white; border-radius: 6px; padding: 0.4rem; margin-bottom: 0.35rem; }
+  .cov-block-name { font-weight: 700; font-size: 0.82rem; margin-bottom: 0.25rem; color: var(--text); }
+  .cov-row { display: flex; align-items: flex-start; gap: 0.4rem; margin-top: 0.15rem; font-size: 0.78rem; }
+  .cov-pill { background: var(--mgb-teal-soft); color: #016b76; border-radius: 999px; padding: 1px 7px; font-size: 0.68rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .cal-open { color: var(--text3); font-size: 0.8rem; font-style: italic; }
+
+  /* Availability admin */
+  .manager-group { margin-bottom: 1.25rem; }
+  .manager-label { font-size: 0.8rem; font-weight: 600; color: var(--text2); padding: 0.4rem 0; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+  .avail-row {
+    display: grid; grid-template-columns: 200px 160px 1fr auto auto;
+    gap: 0.6rem; align-items: center; padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: 0.35rem; background: var(--surface); transition: border-color 0.15s;
+  }
+  .avail-row:hover { border-color: var(--border2); }
+  .avail-name { font-weight: 500; font-size: 0.875rem; display: flex; align-items: center; gap: 0.4rem; }
+  .avail-status { font-size: 0.72rem; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.5rem; white-space: nowrap; }
+  .avail-date-group { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; }
+  .avail-date-group input { padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 130px; }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .two-col.asym { grid-template-columns: 1fr 1.5fr; }
+
+  /* Import/Export */
+  .import-box { border: 2px dashed var(--border2); border-radius: var(--radius); padding: 1.5rem; text-align: center; color: var(--text2); }
+  .import-box:hover { border-color: var(--mgb-teal); background: var(--mgb-teal-soft); }
+
+  /* Rules list */
+  .rules-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .rules-list li { padding: 0.65rem 0.85rem; background: var(--surface2); border-left: 3px solid var(--mgb-teal); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: 0.875rem; color: var(--text2); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .app-body { padding: 1rem; }
+    .form-grid, .form-grid.cols3 { grid-template-columns: 1fr; }
+    .two-col, .two-col.asym { grid-template-columns: 1fr; }
+    .avail-row { grid-template-columns: 1fr; }
+    .tabs-bar, .stat-bar { padding: 0 1rem; }
+  }
+
+  .error-banner { background: var(--danger-soft); border: 1px solid #f5c6c3; border-radius: var(--radius-sm); padding: 0.75rem 1rem; color: var(--danger); font-size: 0.875rem; margin-bottom: 1rem; }
+  .info-banner { background: var(--info-soft); border: 1px solid #B5D4F4; border-radius: var(--radius-sm); padding: 0.75rem 1rem; color: var(--info); font-size: 0.875rem; margin-bottom: 1rem; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+  .score-mode-select { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text2); }
+  .score-mode-select select { width: auto; padding: 0.3rem 0.6rem; }
+
+  /* Modals */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface); border-radius: var(--radius); padding: 1.5rem;
+    box-shadow: var(--shadow-lg); width: 100%; max-width: 360px;
+    border: 1px solid var(--border);
+  }
+  .modal-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text); }
+  .modal-sub { font-size: 0.8rem; color: var(--text3); margin-bottom: 1.25rem; }
+  .modal-error { font-size: 0.8rem; color: var(--danger); margin-top: 0.5rem; min-height: 1.2em; }
+  .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-inner">
+    <div class="app-header-icon">🗓</div>
+    <div>
+      <h1>PTO Coverage Manager</h1>
+      <p>MGB Research Finance &middot; Team scheduling &amp; coverage</p>
+    </div>
+  </div>
+  <div class="app-header-badge">2026</div>
+</header>
+
+<div class="stat-bar" id="stat-bar">
+  <div class="stat-item"><div class="stat-item-val stat-teal" id="stat-active">—</div><div class="stat-item-label">Active requests</div></div>
+  <div class="stat-item"><div class="stat-item-val stat-amber" id="stat-pending">—</div><div class="stat-item-label">Pending approval</div></div>
+  <div class="stat-item"><div class="stat-item-val stat-blue" id="stat-approved">—</div><div class="stat-item-label">Approved this month</div></div>
+  <div class="stat-item"><div class="stat-item-val stat-gray" id="stat-archived">—</div><div class="stat-item-label">Archived</div></div>
+</div>
+
+<nav class="tabs-bar">
+  <button class="tab-btn active" data-tab="pto">PTO Requests</button>
+  <button class="tab-btn" data-tab="calendar">Calendar</button>
+  <button class="tab-btn" data-tab="rules">Coverage Rules</button>
+  <button class="tab-btn" data-tab="score">Coverage Score</button>
+  <button class="tab-btn" data-tab="admin">Settings / Admin</button>
+</nav>
+
+<!-- Edit Dates Modal -->
+<div class="modal-overlay" id="edit-dates-modal">
+  <div class="modal-box" style="max-width:480px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div class="modal-title">✏️ Edit PTO Dates</div>
+    <div class="modal-sub" id="edit-dates-sub" style="font-size:0.8rem;color:var(--text3);margin-bottom:1rem;line-height:1.5"></div>
+    <div style="overflow-y:auto;flex:1">
+      <div class="form-grid" style="margin-bottom:1rem">
+        <div class="form-group">
+          <label>New start date</label>
+          <input type="date" id="edit-start-date" onchange="previewEditDates()">
+        </div>
+        <div class="form-group">
+          <label>New end date</label>
+          <input type="date" id="edit-end-date" onchange="previewEditDates()">
+        </div>
+      </div>
+      <div id="edit-dates-preview"></div>
+    </div>
+    <div class="modal-actions" style="flex-shrink:0;margin-top:1rem">
+      <button class="btn btn-secondary" onclick="closeEditDatesModal()">Cancel</button>
+      <button class="btn btn-primary" id="edit-dates-confirm-btn" onclick="confirmEditDates()" disabled>Confirm date change</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password Modal -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal-box">
+    <div class="modal-title">🔒 Admin Authorization Required</div>
+    <div class="modal-sub">Enter the admin password to clear all PTO requests and coverage assignments.</div>
+    <div class="form-group">
+      <label for="pw-input">Password</label>
+      <input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')confirmClearAll()">
+    </div>
+    <div class="modal-error" id="pw-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closePwModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmClearAll()">Clear All</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reassign Coverage Modal -->
+<div class="modal-overlay" id="reassign-modal">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-title">🔄 Reassign Coverage</div>
+    <div id="reassign-pto-info" style="font-size:0.82rem;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.6rem 0.85rem;margin-bottom:1rem;line-height:1.6"></div>
+    <div class="form-grid" style="margin-bottom:0.85rem">
+      <div class="form-group">
+        <label for="reassign-primary">Primary Coverer</label>
+        <select id="reassign-primary" onchange="validateReassign()"></select>
+      </div>
+      <div class="form-group">
+        <label for="reassign-secondary">Secondary Coverer</label>
+        <select id="reassign-secondary" onchange="validateReassign()"></select>
+      </div>
+    </div>
+    <div id="reassign-warnings" style="display:none;margin-bottom:0.85rem">
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);padding:0.75rem 1rem;font-size:0.82rem;color:#92400e">
+        <strong>⚠️ Rule violations detected:</strong>
+        <ul id="reassign-warning-list" style="margin:0.4rem 0 0 1rem;padding:0;line-height:1.7"></ul>
+      </div>
+      <label class="checkbox-row" style="margin-top:0.65rem;font-size:0.875rem;color:var(--text2)">
+        <input type="checkbox" id="reassign-override" onchange="validateReassign()">
+        I understand the violations — override and save anyway
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeReassignModal()">Cancel</button>
+      <button class="btn btn-primary" id="reassign-save-btn" onclick="saveReassign()" disabled>Save Assignment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invite Preview Modal -->
+<div class="modal-overlay" id="invite-modal">
+  <div class="modal-box" style="max-width:600px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div class="modal-title">✉ Outlook Invite Preview</div>
+    <div style="font-size:0.8rem;color:var(--text3);margin-bottom:0.75rem">Review the details below, then download the files. <strong style="color:var(--text)">In Outlook: open the .ics → click <em>Calendar</em> (top ribbon) to add it → open the event → click <em>Edit</em> → add attendees → click <em>Send</em>. This makes you the organizer.</strong></div>
+    <div id="invite-content" style="overflow-y:auto;flex:1;padding-right:4px"></div>
+    <div class="modal-actions" style="margin-top:1rem;flex-shrink:0">
+      <button class="btn btn-secondary" onclick="closeInviteModal()">Cancel</button>
+      <button class="btn btn-primary" id="invite-outlook-btn" onclick="launchOutlook()" style="background:#0078d4;border-color:#0078d4">📅 Download Calendar Invite (.ics)</button>
+    </div>
+  </div>
+</div>
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="confirm-title">Confirm</div>
+    <div class="modal-sub" id="confirm-msg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="confirmResolve(false)">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmResolve(true)" id="confirm-ok-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" style="
+  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(80px);
+  background:#1a1917; color:white; padding:0.75rem 1.25rem; border-radius:8px;
+  font-size:0.875rem; font-weight:500; z-index:2000; transition:transform 0.25s ease;
+  max-width:480px; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.2);
+  pointer-events:none;
+"></div>
+
+<div class="app-body">
+  <div id="error-banner" class="error-banner" style="display:none"></div>
+
+  <!-- PTO REQUESTS TAB -->
+  <div class="tab-panel active" id="tab-pto">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title"><span class="icon">➕</span> Add PTO Request</div>
+        <form id="pto-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="f-member">Team Member</label>
+              <select id="f-member"></select>
+            </div>
+            <div class="form-group">
+              <label for="f-type">Leave Type</label>
+              <select id="f-type">
+                <option>Vacation</option>
+                <option>Medical</option>
+                <option>Personal</option>
+                <option>Unpaid</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="f-start">Start Date</label>
+              <input type="date" id="f-start" required>
+            </div>
+            <div class="form-group">
+              <label for="f-end">End Date</label>
+              <input type="date" id="f-end" required>
+            </div>
+            <div class="form-group full">
+              <label class="checkbox-row">
+                <input type="checkbox" id="f-override">
+                Override max-5-per-week rule (exceptions only)
+              </label>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Create Request</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📋</span> Blackout Dates Reference</div>
+        <ul class="rules-list" id="blackout-list"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header">
+        <div class="card-title" style="margin:0"><span class="icon">📄</span> Active PTO Requests</div>
+        <button class="btn btn-danger btn-sm" onclick="openPwModal()">🔒 Clear All Requests</button>
+      </div>
+      <div class="table-wrap">
+        <table id="pto-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Member</th><th>Type</th><th>Start</th><th>End</th><th>Days</th><th>Status</th><th>Override</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pto-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ARCHIVED REQUESTS -->
+    <div style="margin-top:1rem">
+      <div id="archive-toggle" onclick="toggleArchive()" style="
+        display:flex;align-items:center;justify-content:space-between;
+        padding:0.75rem 1.25rem;background:var(--surface2);
+        border:1px solid var(--border);border-radius:var(--radius);
+        cursor:pointer;user-select:none;
+      ">
+        <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.875rem;font-weight:600;color:var(--text2)">
+          <span>📦 Archived Requests</span>
+          <span id="archive-count-badge" style="background:var(--surface);border:1px solid var(--border);border-radius:999px;font-size:0.75rem;padding:1px 8px;color:var(--text3)">0 requests</span>
+          <span style="font-size:0.78rem;font-weight:400;color:var(--text3)">— end date has passed</span>
+        </div>
+        <span id="archive-chevron" style="font-size:0.75rem;color:var(--text3);transition:transform 0.2s">▼</span>
+      </div>
+      <div id="archive-panel" style="display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden">
+        <div style="font-size:0.78rem;color:var(--text3);padding:0.5rem 1.25rem;background:var(--surface2);border-bottom:1px solid var(--border)">
+          Read-only. Archived requests still appear on the calendar and count toward coverage scores.
+        </div>
+        <div class="table-wrap" style="border:none;border-radius:0">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th><th>Member</th><th>Type</th><th>Start</th><th>End</th><th>Days</th><th>Status</th><th>Override</th><th>Archived</th>
+              </tr>
+            </thead>
+            <tbody id="archive-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR TAB -->
+  <div class="tab-panel" id="tab-calendar">
+    <div class="card">
+      <div class="calendar-nav">
+        <button class="btn btn-secondary" onclick="changeMonth(-1)">◀ Prev</button>
+        <div class="calendar-month" id="cal-month-label"></div>
+        <button class="btn btn-secondary" onclick="changeMonth(1)">Next ▶</button>
+      </div>
+      <div id="cal-container" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
+  <!-- COVERAGE RULES TAB -->
+  <div class="tab-panel" id="tab-rules">
+    <div class="card">
+      <div class="card-title"><span class="icon">⚙️</span> Coverage Rules</div>
+      <ul class="rules-list">
+        <li>1–2 business days of PTO → 1 coverer assigned</li>
+        <li>3+ business days of PTO → 2 coverers assigned</li>
+        <li>Max 5 approved PTO requests per calendar week (override available)</li>
+        <li>Blackout windows: 1 week before 2/5, 6/5, and 10/5</li>
+        <li>Federal holidays excluded from business day counts</li>
+        <li>Coverers cannot be on approved PTO during same dates</li>
+        <li>System avoids assigning same coverer in same/adjacent month</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="section-header">
+        <div class="card-title" style="margin:0"><span class="icon">🔄</span> Active Coverage Assignments</div>
+        <div class="btn-row" style="margin:0">
+          <button class="btn btn-primary btn-sm" onclick="autoAssignCoverage(false)">Auto-Assign Coverage</button>
+          <button class="btn btn-secondary btn-sm" onclick="autoAssignCoverage(true)">Auto-Assign with Override</button>
+          <button class="btn btn-secondary btn-sm" onclick="fixUnderCoveredRequests()" style="border-color:#0078d4;color:#0078d4">🔧 Fix Under-Covered</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="coverage-table">
+          <thead>
+            <tr><th>ID</th><th>PTO Request</th><th>Requester</th><th>Coverer</th><th>Role</th><th>Rule</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="coverage-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COVERAGE ARCHIVE -->
+    <div style="margin-top:1rem">
+      <div id="cov-archive-toggle" onclick="toggleCoverageArchive()" style="
+        display:flex;align-items:center;justify-content:space-between;
+        padding:0.75rem 1.25rem;background:var(--surface2);
+        border:1px solid var(--border);border-radius:var(--radius);
+        cursor:pointer;user-select:none;
+      ">
+        <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.875rem;font-weight:600;color:var(--text2)">
+          <span>📦 Archived Coverage Assignments</span>
+          <span id="cov-archive-count-badge" style="background:var(--surface);border:1px solid var(--border);border-radius:999px;font-size:0.75rem;padding:1px 8px;color:var(--text3)">0 assignments</span>
+          <span style="font-size:0.78rem;font-weight:400;color:var(--text3)">— PTO end date has passed</span>
+        </div>
+        <span id="cov-archive-chevron" style="font-size:0.75rem;color:var(--text3);transition:transform 0.2s">▼</span>
+      </div>
+      <div id="cov-archive-panel" style="display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden">
+        <div style="font-size:0.78rem;color:var(--text3);padding:0.5rem 1.25rem;background:var(--surface2);border-bottom:1px solid var(--border)">
+          Read-only. Archived assignments still appear on the calendar and count toward coverage scores.
+        </div>
+        <div class="table-wrap" style="border:none;border-radius:0">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>PTO Request</th><th>Requester</th><th>Coverer</th><th>Role</th><th>Rule</th><th>Status</th></tr>
+            </thead>
+            <tbody id="cov-archive-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCORE TAB -->
+  <div class="tab-panel" id="tab-score">
+    <div class="card">
+      <div class="section-header">
+        <div>
+          <div class="card-title" style="margin:0"><span class="icon">📊</span> Coverage Score</div>
+          <div style="font-size:0.8rem;color:var(--text3);margin-top:0.25rem" id="score-window-label"></div>
+        </div>
+        <div class="score-mode-select">
+          <label for="score-mode">Mode:</label>
+          <select id="score-mode" onchange="renderScores()">
+            <option value="days">Days covered (strict)</option>
+            <option value="weighted">Weighted</option>
+          </select>
+        </div>
+      </div>
+      <div id="score-list"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN TAB -->
+  <div class="tab-panel" id="tab-admin">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title"><span class="icon">📤</span> Import / Export</div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">📂 Import JSON / Excel</button>
+          <button class="btn btn-secondary" onclick="exportJSON()">💾 Export JSON</button>
+          <button class="btn btn-secondary" onclick="exportExcel()">📊 Export Excel</button>
+        </div>
+        <input type="file" id="import-file" accept=".json,.xlsx,.xls" style="display:none" onchange="handleImport(this)">
+        <div id="import-status" style="margin-top:0.75rem;font-size:0.85rem;color:var(--text2)"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📖</span> Excel Logic Reference</div>
+        <p style="font-size:0.875rem;color:var(--text2);line-height:1.6">
+          Score = SUMIFS(coverage_points, coverer_id, member). Coverage assignment uses lowest-score available coverer (MINIFS-style). Blackout windows enforced via date-range overlap checks. Override flag bypasses weekly cap.
+        </p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:0.1rem 0 0.85rem" onclick="togglePTOTracker()">
+        <div class="card-title"><span class="icon">📊</span> PTO Days Tracker</div>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <span style="font-size:0.75rem;color:var(--text3)">Business days only · Approved requests</span>
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();exportPTOTrackerCSV()" title="Export both views as CSV">⬇ Export CSV</button>
+          <span id="pto-tracker-chevron" style="font-size:0.9rem;color:var(--text3);transition:transform 0.2s;display:inline-block">▼</span>
+        </div>
+      </div>
+      <div id="pto-tracker-body" style="display:none">
+
+        <!-- Sub-tabs -->
+        <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1rem">
+          <button class="tracker-tab active" id="tracker-tab-yearly" onclick="switchTrackerTab('yearly')" style="font-size:0.78rem;padding:0.5rem 1rem;background:none;border:none;border-bottom:2px solid var(--mgb-teal);color:var(--mgb-teal);font-weight:600;cursor:pointer;font-family:inherit">📅 Yearly Summary (2026)</button>
+          <button class="tracker-tab" id="tracker-tab-window" onclick="switchTrackerTab('window')" style="font-size:0.78rem;padding:0.5rem 1rem;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);font-weight:500;cursor:pointer;font-family:inherit">🗓 6-Month Window</button>
+        </div>
+
+        <!-- Yearly summary -->
+        <div id="tracker-panel-yearly">
+          <div style="display:grid;grid-template-columns:1fr;gap:0.5rem;margin-bottom:1rem">
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.65rem 1rem;display:inline-flex;align-items:center;gap:2rem;flex-wrap:wrap">
+              <div><div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Total team days</div><div id="tracker-stat-total" style="font-size:1.5rem;font-weight:700;color:var(--mgb-teal)">—</div></div>
+              <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+                <span style="font-size:0.78rem;color:var(--text3)">Sort by:</span>
+                <button class="btn btn-secondary btn-sm" onclick="renderYearlyTable('name')">Name</button>
+                <button class="btn btn-secondary btn-sm" onclick="renderYearlyTable('total')">Total ↓</button>
+                <button class="btn btn-secondary btn-sm" onclick="renderYearlyTable('vac')">Vacation ↓</button>
+              </div>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:0.82rem" id="tracker-yearly-table">
+              <thead>
+                <tr style="background:var(--surface2)">
+                  <th style="padding:7px 10px;text-align:left;font-size:0.72rem;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);white-space:nowrap;width:160px">Member</th>
+                  <th style="padding:7px 10px;text-align:left;font-size:0.72rem;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);width:100px">Manager</th>
+                  <th style="padding:7px 10px;text-align:center;font-size:0.72rem;font-weight:500;color:#0C447C;border-bottom:1px solid var(--border);width:75px">Vacation</th>
+                  <th style="padding:7px 10px;text-align:center;font-size:0.72rem;font-weight:500;color:#633806;border-bottom:1px solid var(--border);width:70px">Medical</th>
+                  <th style="padding:7px 10px;text-align:center;font-size:0.72rem;font-weight:500;color:#27500A;border-bottom:1px solid var(--border);width:70px">Personal</th>
+                  <th style="padding:7px 10px;text-align:center;font-size:0.72rem;font-weight:500;color:#791F1F;border-bottom:1px solid var(--border);width:65px">Unpaid</th>
+                  <th style="padding:7px 10px;text-align:left;font-size:0.72rem;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);width:120px">Total</th>
+                </tr>
+              </thead>
+              <tbody id="tracker-yearly-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 6-month window -->
+        <div id="tracker-panel-window" style="display:none">
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:0.82rem" id="tracker-window-table">
+              <thead id="tracker-window-head"></thead>
+              <tbody id="tracker-window-body"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:0.75rem;display:flex;gap:1rem;flex-wrap:wrap;font-size:0.75rem;color:var(--text3);align-items:center">
+            <span>Past months (taken)</span>
+            <span style="color:var(--mgb-teal);font-weight:500">▶ Current month</span>
+            <span>Future (approved, upcoming)</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;background:#E1F5EE;border-radius:2px;border:1px solid #9FE1CB"></span>1–2 days</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;background:#9FE1CB;border-radius:2px"></span>3–4 days</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;background:#01828E;border-radius:2px"></span>5+ days</span>
+          </div>
+
+        </div><!-- end tracker-panel-window -->
+      </div><!-- end pto-tracker-body -->
+    </div><!-- end PTO tracker card -->
+
+    <div class="card">
+      <div class="card-title"><span class="icon">👥</span> Coverage Availability</div>
+      <p style="font-size:0.875rem;color:var(--text2);margin-bottom:1rem">Checked = available for coverage. Uncheck to mark a leave of absence (with optional date range).</p>
+      <div id="avail-admin"></div>
+    </div>
+
+  </div><!-- end tab-admin -->
+</div><!-- end app-body -->
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+let teamMembers = [
+  { id: 1,  name: 'Alegria Acop',         manager: 'Harris, Alanna',    managerColor: '#72c057', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'aacop@mgb.org' },
+  { id: 2,  name: 'Caren Briggs',          manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'cbriggs1@mgb.org' },
+  { id: 3,  name: 'Carol Ann Brokmeier',   manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'cbrokmeier@mgb.org' },
+  { id: 4,  name: 'Susan Buchan',          manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'sbuchan@mgb.org' },
+  { id: 5,  name: 'Jim Cappellucci',       manager: 'Stringer, Lorraine',managerColor: '#ffe600', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'jcappellucci@mgb.org' },
+  { id: 6,  name: 'Peyton Cearley',        manager: 'Stringer, Lorraine',managerColor: '#ffe600', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'pcearley@mgb.org' },
+  { id: 7,  name: 'Chris Decelles',        manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'cdecelles@mgb.org' },
+  { id: 8,  name: 'Maribel Dejesus',       manager: 'Stringer, Lorraine',managerColor: '#ffe600', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'mdejesus@mgb.org' },
+  { id: 9,  name: 'Lashante Drakes',       manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'ldrakes@mgb.org' },
+  { id: 10, name: 'Tricia Gill',           manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'tlgill@mgb.org' },
+  { id: 11, name: 'Patricia Gilmore',      manager: 'Harris, Alanna',    managerColor: '#72c057', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'pgilmore@mgb.org' },
+  { id: 12, name: 'Darlene Jackson',       manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'dmjackson@mgb.org' },
+  { id: 13, name: 'Kate Lande',            manager: 'Stringer, Lorraine',managerColor: '#ffe600', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'klande@mgb.org' },
+  { id: 14, name: 'Ann Lennon',            manager: 'Stringer, Lorraine',managerColor: '#ffe600', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'alennon1@mgb.org' },
+  { id: 15, name: 'Joanne Maldonis',       manager: 'Harris, Alanna',    managerColor: '#72c057', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'jmaldonis@mgb.org' },
+  { id: 16, name: 'Lisa McCaig',           manager: 'Harris, Alanna',    managerColor: '#72c057', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'lmccaig@mgb.org' },
+  { id: 17, name: 'Tristienne McCarthy',   manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'tmccarthy2@mgb.org' },
+  { id: 18, name: 'Juliana McWilliams',    manager: 'Stringer, Lorraine',managerColor: '#ffe600', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'jmcwilliams1@mgb.org' },
+  { id: 19, name: 'Julissa Oviedo',        manager: 'Stringer, Lorraine',managerColor: '#ffe600', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'joviedo1@mgb.org' },
+  { id: 20, name: 'Lori Plyler',           manager: 'Harris, Alanna',    managerColor: '#72c057', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'lplyler@mgb.org' },
+  { id: 21, name: 'Manoushka Ryan',        manager: 'Morrison, Rob',     managerColor: '#7ba7d4', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'mryan10@mgb.org' },
+  { id: 22, name: 'Rob Singleton',         manager: 'Harris, Alanna',    managerColor: '#72c057', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'rsingleton2@mgb.org' },
+  { id: 23, name: 'Sarah Theriault',       manager: 'Stringer, Lorraine',managerColor: '#ffe600', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'setheriault@mgb.org' },
+  { id: 24, name: 'Helen Wong',            manager: 'Harris, Alanna',    managerColor: '#72c057', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'hwong3@mgb.org' },
+  { id: 25, name: 'Nyjah Wyche',           manager: 'Harris, Alanna',    managerColor: '#72c057', isCoverageAvailable: true, coverageLeaveStart: '', coverageLeaveEnd: '', email: 'nwyche@mgb.org' }
+];
+
+// DA splits — department-specific DA lists appended to coverage invites
+// Key format: "MemberName|DeptCode" — allows per-person per-dept DA lists
+const DA_SPLITS = {
+  'Alegria Acop|42AA': {
+    label: '42AA - Neurology (MGH) — DA Split',
+    note: 'For proposals and post submissions that will come from the following DAs:',
+    groups: [
+      {
+        role: 'Coverage Person 1',
+        das: ['Cindy Wan', 'Jennifer Morgan', 'Michele Courtright', 'Keti Jani', 'Ivelisse Nelson', 'Yasmina Berklat']
+      },
+      {
+        role: 'Coverage Person 2',
+        das: ['Robin Sobolewski', 'Emily Clark', 'Sandra Milescu', 'Su Wu', 'Katherine Rauf', 'Dimitrios Pashos']
+      }
+    ]
+  }
+};
+const MANAGER_EMAILS = {
+  'Morrison, Rob':      'rbmorrison@mgb.org',
+  'Stringer, Lorraine': 'lstringer@mgb.org',
+  'Harris, Alanna':     'aharris12@mgb.org'
+};
+
+let ptoRequests = [];
+let coverageAssignments = [];
+let nextPtoId = 1;
+let nextCovId = 1;
+
+const STORAGE_KEY = 'pto-coverage-app-v1';
+
+// ============================================================
+// PERSISTENCE — localStorage
+// ============================================================
+function saveAll() {
+  try {
+    const payload = {
+      ptoRequests,
+      coverageAssignments,
+      nextPtoId,
+      nextCovId,
+      teamMembersAvailability: teamMembers.map(m => ({
+        id: m.id,
+        isCoverageAvailable: m.isCoverageAvailable !== false,
+        coverageLeaveStart: m.coverageLeaveStart || '',
+        coverageLeaveEnd: m.coverageLeaveEnd || '',
+        email: m.email || ''
+      }))
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch(e) { console.warn('Could not save to localStorage:', e); }
+}
+
+function loadAll() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed.ptoRequests)) ptoRequests = parsed.ptoRequests;
+    if (Array.isArray(parsed.coverageAssignments)) coverageAssignments = parsed.coverageAssignments;
+    if (parsed.nextPtoId) nextPtoId = parsed.nextPtoId;
+    if (parsed.nextCovId) nextCovId = parsed.nextCovId;
+    if (Array.isArray(parsed.teamMembersAvailability)) {
+      const availMap = {};
+      parsed.teamMembersAvailability.forEach(a => { availMap[a.id] = a; });
+      teamMembers = teamMembers.map(m => {
+        const saved = availMap[m.id];
+        if (!saved) return m;
+        return {
+          ...m,
+          isCoverageAvailable: saved.isCoverageAvailable !== false,
+          coverageLeaveStart: saved.coverageLeaveStart || '',
+          coverageLeaveEnd: saved.coverageLeaveEnd || '',
+          // Preserve baked-in email if localStorage has none (migration from old data)
+          email: saved.email || m.email || ''
+        };
+      });
+    }
+  } catch(e) { console.warn('Could not load from localStorage:', e); }
+}
+
+// Legacy: kept for backward compat but now handled by saveAll/loadAll
+const AVAIL_KEY = STORAGE_KEY;
+
+// ============================================================
+// DATE UTILS
+// ============================================================
+function toDate(str) { return new Date(str + 'T00:00:00'); }
+
+function dateRangesOverlap(aS, aE, bS, bE) {
+  return toDate(aS) <= toDate(bE) && toDate(bS) <= toDate(aE);
+}
+
+function getFederalHolidays(year) {
+  function nthMonday(month, n) {
+    const d = new Date(Date.UTC(year, month, 1));
+    let cnt = 0;
+    while (true) { if (d.getUTCDay() === 1) { cnt++; if (cnt === n) return d; } d.setUTCDate(d.getUTCDate() + 1); }
+  }
+  function lastMonday(month) {
+    const d = new Date(Date.UTC(year, month + 1, 0));
+    while (d.getUTCDay() !== 1) d.setUTCDate(d.getUTCDate() - 1);
+    return d;
+  }
+  function thanksGiving() {
+    const d = new Date(Date.UTC(year, 10, 1)); let nth = 0;
+    while (true) { if (d.getUTCDay() === 4) { nth++; if (nth === 4) return new Date(d); } d.setUTCDate(d.getUTCDate() + 1); }
+  }
+  return [
+    new Date(Date.UTC(year, 0, 1)), nthMonday(0, 3), nthMonday(1, 3), lastMonday(4),
+    new Date(Date.UTC(year, 5, 19)), new Date(Date.UTC(year, 6, 4)),
+    nthMonday(8, 1), nthMonday(9, 2), new Date(Date.UTC(year, 10, 11)),
+    thanksGiving(), new Date(Date.UTC(year, 11, 25))
+  ].map(d => d.toISOString().split('T')[0]);
+}
+
+function isFederalHoliday(dateStr) {
+  const year = toDate(dateStr).getUTCFullYear();
+  return getFederalHolidays(year).includes(dateStr);
+}
+
+function numberBusinessDays(startDate, endDate) {
+  const s = toDate(startDate), e = toDate(endDate);
+  let cnt = 0, cur = new Date(s);
+  while (cur <= e) {
+    const day = cur.getUTCDay(), ds = cur.toISOString().split('T')[0];
+    if (day >= 1 && day <= 5 && !isFederalHoliday(ds)) cnt++;
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return cnt;
+}
+
+function getBlackoutRanges(year) {
+  return ['02-05', '06-05', '10-05'].map(mday => {
+    const [m, d] = mday.split('-').map(Number);
+    const target = new Date(Date.UTC(year, m - 1, d));
+    const start = new Date(target); start.setUTCDate(target.getUTCDate() - 7);
+    const end = new Date(target); end.setUTCDate(target.getUTCDate() - 1);
+    return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+  });
+}
+
+function isInBlackout(startDate, endDate) {
+  const year = toDate(startDate).getUTCFullYear();
+  return getBlackoutRanges(year).some(r => dateRangesOverlap(startDate, endDate, r.start, r.end));
+}
+
+function getWeekKey(dateStr) {
+  const d = toDate(dateStr), day = d.getDay();
+  const mon = new Date(d); mon.setDate(d.getDate() - ((day + 6) % 7));
+  return mon.toISOString().split('T')[0];
+}
+
+function getWeekKeysForRange(startDate, endDate) {
+  const keys = new Set(), cur = toDate(startDate), end = toDate(endDate);
+  while (cur <= end) { keys.add(getWeekKey(cur.toISOString().split('T')[0])); cur.setDate(cur.getDate() + 1); }
+  return Array.from(keys);
+}
+
+function getMonthKey(dateStr) {
+  const d = toDate(dateStr);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function getMonthOrdinal(dateStr) {
+  const d = toDate(dateStr); return d.getUTCFullYear() * 12 + d.getUTCMonth();
+}
+
+function getMonthKeysBetween(startDate, endDate) {
+  const keys = new Set(), cur = toDate(startDate), end = toDate(endDate);
+  cur.setUTCDate(1); end.setUTCDate(1);
+  while (cur <= end) {
+    keys.add(`${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, '0')}`);
+    cur.setUTCMonth(cur.getUTCMonth() + 1);
+  }
+  return Array.from(keys);
+}
+
+// ============================================================
+// COVERAGE LOGIC
+// ============================================================
+function isCoverageExcluded(member) {
+  const excluded = new Set(['juliana mcwilliams', 'mcwilliams, juliana']);
+  return excluded.has((member.name || '').trim().toLowerCase());
+}
+
+function isMemberUnavailableForRange(member, startDate, endDate) {
+  if (!member) return true;
+  if (member.isCoverageAvailable !== false) return false;
+  if (!member.coverageLeaveStart || !member.coverageLeaveEnd) return true;
+  return dateRangesOverlap(startDate, endDate, member.coverageLeaveStart, member.coverageLeaveEnd);
+}
+
+function hasCoverageInMonth(memberId, monthKey, assignments, requests, skipId) {
+  return assignments.some(a => {
+    if (a.id === skipId) return false;
+    if (a.covererId !== memberId) return false;
+    const req = requests.find(r => r.id === a.ptoRequestId);
+    if (!req) return false;
+    return getMonthKeysBetween(req.startDate, req.endDate).includes(monthKey);
+  });
+}
+
+function hasCoverageInSameOrAdjacentMonth(memberId, pto, assignments, requests) {
+  const ord = getMonthOrdinal(pto.startDate);
+  return assignments.some(a => {
+    if (a.covererId !== memberId) return false;
+    const req = requests.find(r => r.id === a.ptoRequestId);
+    if (!req) return false;
+    for (let m = getMonthOrdinal(req.startDate); m <= getMonthOrdinal(req.endDate); m++) {
+      if (Math.abs(m - ord) <= 1) return true;
+    }
+    return false;
+  });
+}
+
+function coverageDaysInWindow(memberId, assignments, requests, refStr) {
+  const ref = toDate(refStr);
+  const ws = new Date(ref); ws.setMonth(ws.getMonth() - 3);
+  const we = new Date(ref); we.setMonth(we.getMonth() + 3);
+  let total = 0;
+  assignments.forEach(a => {
+    if (a.covererId !== memberId) return;
+    const req = requests.find(r => r.id === a.ptoRequestId);
+    if (!req) return;
+    const rs = toDate(req.startDate), re = toDate(req.endDate);
+    const os = rs > ws ? rs : ws, oe = re < we ? re : we;
+    if (os <= oe) total += numberBusinessDays(os.toISOString().split('T')[0], oe.toISOString().split('T')[0]);
+  });
+  return total;
+}
+
+function calculateScore(members, requests, assignments, mode, refStr) {
+  const scores = {};
+  members.forEach(m => { scores[m.id] = coverageDaysInWindow(m.id, assignments, requests, refStr); });
+  if (mode === 'weighted') {
+    assignments.forEach(a => {
+      const req = requests.find(r => r.id === a.ptoRequestId);
+      if (req) scores[req.memberId] = (scores[req.memberId] || 0) + 0.25;
+    });
+    requests.forEach(r => {
+      if (r.status === 'Approved') scores[r.memberId] = (scores[r.memberId] || 0) - 0.1;
+    });
+  }
+  return members.map(m => ({ id: m.id, name: m.name, score: Math.max(0, parseFloat((scores[m.id] || 0).toFixed(2))) }));
+}
+
+function selectCoverersForPTO(pto, requests, assignments, members, count, allowOverride) {
+  const scores = calculateScore(members, requests, assignments, 'days', new Date().toISOString().split('T')[0]);
+  const absentIds = requests.filter(r => r.status === 'Approved' && dateRangesOverlap(r.startDate, r.endDate, pto.startDate, pto.endDate)).map(r => r.memberId);
+
+  // Base eligible: not the requester, not on PTO same dates, not excluded, not on leave
+  const eligible = members.filter(m =>
+    m.id !== pto.memberId && !absentIds.includes(m.id) && !isCoverageExcluded(m) && !isMemberUnavailableForRange(m, pto.startDate, pto.endDate)
+  );
+  if (eligible.length === 0) return [];
+
+  // Always exclude anyone already covering someone else during the same date range
+  // This is a hard rule that cannot be overridden by fallback
+  const notDoubleBooked = eligible.filter(m =>
+    !assignments.some(a => {
+      if (a.covererId !== m.id) return false;
+      const r = requests.find(r => r.id === a.ptoRequestId);
+      return r && r.id !== pto.id && dateRangesOverlap(r.startDate, r.endDate, pto.startDate, pto.endDate);
+    })
+  );
+
+  // Try adjacent-month filtered pool first
+  let pool = notDoubleBooked.filter(m => !hasCoverageInSameOrAdjacentMonth(m.id, pto, assignments, requests));
+
+  // Fall back to notDoubleBooked (same-week exclusion still applies) if pool too small
+  if (pool.length < count) pool = notDoubleBooked;
+
+  // Further fall back to full eligible only if still not enough
+  if (pool.length < count) pool = eligible;
+
+  // Prefer coverers not yet assigned to anything (fresh)
+  const assigned = new Set(assignments.map(a => a.covererId));
+  const fresh = pool.filter(m => !assigned.has(m.id));
+  if (fresh.length >= count) pool = fresh;
+
+  pool.sort((a, b) => (scores.find(x => x.id === a.id)?.score || 0) - (scores.find(x => x.id === b.id)?.score || 0));
+
+  // Ensure we never return duplicates
+  const result = [];
+  const used = new Set();
+  for (const m of pool) {
+    if (result.length >= count) break;
+    if (!used.has(m.id)) { result.push(m.id); used.add(m.id); }
+  }
+  return result;
+}
+
+function replaceConflictingCoverers(requests, assignments, members) {
+  const resolved = assignments.map(a => ({ ...a }));
+  resolved.forEach((a, idx) => {
+    const req = requests.find(r => r.id === a.ptoRequestId);
+    if (!req) return;
+    const coverer = members.find(m => m.id === a.covererId);
+    const conflict = requests.some(r => r.status === 'Approved' && r.memberId === a.covererId && dateRangesOverlap(r.startDate, r.endDate, req.startDate, req.endDate));
+    const unavail = isMemberUnavailableForRange(coverer, req.startDate, req.endDate);
+    if (!conflict && !unavail) return;
+    const scores = calculateScore(members, requests, resolved, 'days', new Date().toISOString().split('T')[0]);
+    // Already-assigned coverer IDs in the current resolved set (excluding this slot)
+    const alreadyCovering = new Set(resolved.filter((_,i)=>i!==idx).map(x=>x.covererId));
+    const candidates = members.filter(m =>
+      m.id !== req.memberId &&
+      m.id !== a.covererId &&
+      !isCoverageExcluded(m) &&
+      !isMemberUnavailableForRange(m, req.startDate, req.endDate) &&
+      // Not on PTO same dates
+      !requests.some(r => r.status === 'Approved' && r.memberId === m.id && dateRangesOverlap(r.startDate, r.endDate, req.startDate, req.endDate)) &&
+      // Not already covering someone else this same week
+      !resolved.some(x => x.covererId === m.id && x.ptoRequestId !== req.id && (() => {
+        const xReq = requests.find(r => r.id === x.ptoRequestId);
+        return xReq && dateRangesOverlap(xReq.startDate, xReq.endDate, req.startDate, req.endDate);
+      })()) &&
+      // Use adjacent-month check (same rule as selectCoverersForPTO)
+      !hasCoverageInSameOrAdjacentMonth(m.id, req, resolved.filter((_,i)=>i!==idx), requests)
+    );
+    if (candidates.length === 0) return;
+    candidates.sort((a2, b) => (scores.find(x => x.id === a2.id)?.score || 0) - (scores.find(x => x.id === b.id)?.score || 0));
+    resolved[idx] = { ...a, covererId: candidates[0].id, rule: a.rule + (unavail ? ' (replaced: leave)' : ' (replaced: PTO)') };
+  });
+  return resolved;
+}
+
+function generateCoverageAssignments(requests, assignments, members, allowOverride, includeExisting, extraPerRequest) {
+  const toAssign = requests.filter(req => {
+    if (req.status !== 'Approved') return false;
+    if (extraPerRequest) return !assignments.some(a => a.ptoRequestId === req.id && a.isOverrideExtra);
+    if (includeExisting) return true;
+    // Include if no assignments exist, OR if existing count is less than what's needed
+    // This fixes the case where a request was previously under-assigned (e.g. 1 coverer
+    // assigned for a 3+ day PTO that should have 2)
+    const existing = assignments.filter(a => a.ptoRequestId === req.id);
+    if (existing.length === 0) return true;
+    const days = numberBusinessDays(req.startDate, req.endDate);
+    const needed = days >= 3 ? 2 : 1;
+    return existing.length < needed;
+  });
+  const newOnes = [];
+  let nid = assignments.reduce((max, a) => Math.max(max, a.id), 0) + 1;
+  toAssign.forEach(req => {
+    const days = numberBusinessDays(req.startDate, req.endDate);
+    const needed = extraPerRequest ? 1 : (days >= 3 ? 2 : 1);
+    // Only add the number of coverers still missing, not all needed
+    const alreadyAssigned = assignments.filter(a => a.ptoRequestId === req.id).length;
+    const stillNeeded = extraPerRequest ? 1 : Math.max(0, needed - alreadyAssigned);
+    if (stillNeeded === 0) return;
+    const pool = [...assignments, ...newOnes];
+    const selected = selectCoverersForPTO(req, requests, pool, members, stillNeeded, allowOverride);
+    selected.forEach(cid => {
+      newOnes.push({ id: nid++, ptoRequestId: req.id, covererId: cid, rule: days >= 3 ? 'Multi-day (≥3 biz days)' : 'Short PTO single coverer', scoreImpact: days >= 3 ? 1.5 : 1, isOverrideExtra: !!extraPerRequest });
+    });
+  });
+  return replaceConflictingCoverers(requests, [...assignments, ...newOnes], members);
+}
+
+// ============================================================
+// STATE HELPERS
+// ============================================================
+function memberById(id) { return teamMembers.find(m => m.id === id); }
+function reqById(id) { return ptoRequests.find(r => r.id === id); }
+
+function canApproveRequest(request) {
+  if (request.override) return { allowed: true };
+  if (isInBlackout(request.startDate, request.endDate)) return { allowed: false, reason: 'blackout' };
+  const weeks = getWeekKeysForRange(request.startDate, request.endDate);
+  for (const week of weeks) {
+    // Count both Approved AND Pending requests toward the cap — prevents sneaking
+    // in extras by submitting multiple Pending requests before approving them
+    const out = ptoRequests.filter(r =>
+      (r.status === 'Approved' || r.status === 'Pending') &&
+      r.id !== request.id &&
+      getWeekKeysForRange(r.startDate, r.endDate).includes(week)
+    ).length;
+    if (out + 1 > 5) return { allowed: false, week };
+  }
+  return { allowed: true };
+}
+
+// ============================================================
+// SELF-HEAL: Fix any under-covered approved requests on load
+// ============================================================
+function healUnderCoveredRequests() {
+  const approved = ptoRequests.filter(r => r.status === 'Approved');
+  let healed = 0;
+  approved.forEach(req => {
+    const days = numberBusinessDays(req.startDate, req.endDate);
+    const needed = days >= 3 ? 2 : 1;
+    const existing = coverageAssignments.filter(a => a.ptoRequestId === req.id && !a.isOverrideExtra);
+    if (existing.length < needed) {
+      // Strip ALL assignments for this request and do a full fresh reassignment
+      coverageAssignments = coverageAssignments.filter(a => a.ptoRequestId !== req.id);
+      const fresh = generateCoverageAssignments(
+        ptoRequests, coverageAssignments, teamMembers, req.override || false, false, false
+      );
+      coverageAssignments = fresh;
+      healed++;
+    }
+  });
+  if (healed > 0) saveAll();
+}
+function isArchived(req) {
+  const today = new Date().toISOString().split('T')[0];
+  return req.endDate < today;
+}
+
+function toggleArchive() {
+  const panel = document.getElementById('archive-panel');
+  const chevron = document.getElementById('archive-chevron');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+function renderAll() {
+  renderPTOTable();
+  renderCoverageTable();
+  renderCalendar();
+  renderScores();
+  renderAvailAdmin();
+  renderStatBar();
+}
+
+function renderStatBar() {
+  const today = new Date().toISOString().split('T')[0];
+  const thisMonth = today.slice(0, 7);
+  const active = ptoRequests.filter(r => r.endDate >= today).length;
+  const pending = ptoRequests.filter(r => r.status === 'Pending' && r.endDate >= today).length;
+  const approvedMonth = ptoRequests.filter(r => r.status === 'Approved' && r.startDate.slice(0,7) === thisMonth).length;
+  const archived = ptoRequests.filter(r => r.endDate < today).length;
+  const sa = document.getElementById('stat-active');
+  const sp = document.getElementById('stat-pending');
+  const sm = document.getElementById('stat-approved');
+  const sr = document.getElementById('stat-archived');
+  if (sa) sa.textContent = active;
+  if (sp) sp.textContent = pending;
+  if (sm) sm.textContent = approvedMonth;
+  if (sr) sr.textContent = archived;
+}
+
+function renderPTOTable() {
+  const today = new Date().toISOString().split('T')[0];
+  const activeReqs = ptoRequests.filter(r => r.endDate >= today);
+  const archivedReqs = ptoRequests.filter(r => r.endDate < today);
+
+  // --- Active requests ---
+  const tbody = document.getElementById('pto-tbody');
+  if (activeReqs.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No active PTO requests. Add one above.</td></tr>';
+  } else {
+    tbody.innerHTML = activeReqs.map(req => {
+      const m = memberById(req.memberId);
+      const days = numberBusinessDays(req.startDate, req.endDate);
+      const statusClass = req.status === 'Approved' ? 'badge-approved' : req.status === 'Rejected' ? 'badge-rejected' : 'badge-pending';
+      const approveRejectBtns = req.status === 'Pending'
+        ? `<button class="btn btn-approve btn-sm" onclick="approveReq(${req.id})">Approve</button> <button class="btn btn-reject btn-sm" onclick="rejectReq(${req.id})">Reject</button>`
+        : '';
+      const editDatesBtn = req.status === 'Approved'
+        ? `<button class="btn btn-secondary btn-sm" onclick="openEditDatesModal(${req.id})" style="border-color:#01828E;color:#01828E">✏️ Edit Dates</button>`
+        : '';
+      const sendInviteBtn = req.status === 'Approved'
+        ? `<button class="btn btn-secondary btn-sm" onclick="openInviteModal(${req.id})" style="border-color:#0078d4;color:#0078d4">✉ Send Invite</button>`
+        : '';
+      const dateDisplay = req.changeLog?.length
+        ? `${req.startDate} → ${req.endDate} <span style="background:var(--pending-soft);color:var(--pending);border-radius:4px;padding:1px 5px;font-size:0.68rem;margin-left:4px">updated</span>`
+        : `${req.startDate} → ${req.endDate}`;
+      const changeLogHtml = req.changeLog?.length
+        ? `<tr><td colspan="9" style="padding:0 0.85rem 0.75rem;background:var(--surface2)">
+            <div style="font-size:0.72rem;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">📋 Change log</div>
+            ${req.changeLog.map(l => `<div style="font-size:0.78rem;color:var(--text2);padding:2px 0">
+              <span style="color:var(--text3)">${l.date}</span> &nbsp;·&nbsp; ${l.from} → ${l.to} &nbsp;·&nbsp; ${l.note}
+            </div>`).join('')}
+          </td></tr>`
+        : '';
+      return `<tr>
+        <td style="font-family:'DM Mono',monospace;font-size:0.8rem">#${req.id}</td>
+        <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m?.managerColor||'#ccc'};margin-right:6px"></span>${m?.name || 'Unknown'}</td>
+        <td>${req.type}</td>
+        <td colspan="2" style="font-size:0.82rem">${dateDisplay}</td>
+        <td>${days} day${days !== 1 ? 's' : ''}</td>
+        <td><span class="badge ${statusClass}">${req.status}</span></td>
+        <td>${req.override ? '<span class="badge badge-override">Override</span>' : '—'}</td>
+        <td style="white-space:nowrap;display:flex;gap:0.35rem;flex-wrap:wrap">
+          ${approveRejectBtns}
+          ${editDatesBtn}
+          ${sendInviteBtn}
+          <button class="btn btn-danger btn-sm" onclick="clearSinglePTO(${req.id})" title="Delete this request">🗑 Clear</button>
+        </td>
+      </tr>${changeLogHtml}`;
+    }).join('');
+  }
+
+  // --- Archive count badge ---
+  const badge = document.getElementById('archive-count-badge');
+  if (badge) badge.textContent = `${archivedReqs.length} request${archivedReqs.length !== 1 ? 's' : ''}`;
+
+  // --- Archived requests ---
+  const archiveTbody = document.getElementById('archive-tbody');
+  if (!archiveTbody) return;
+  if (archivedReqs.length === 0) {
+    archiveTbody.innerHTML = '<tr class="empty-row"><td colspan="9">No archived requests yet.</td></tr>';
+  } else {
+    archiveTbody.innerHTML = archivedReqs.map(req => {
+      const m = memberById(req.memberId);
+      const days = numberBusinessDays(req.startDate, req.endDate);
+      const statusClass = req.status === 'Approved' ? 'badge-approved' : req.status === 'Rejected' ? 'badge-rejected' : 'badge-pending';
+      return `<tr style="opacity:0.72">
+        <td style="font-family:'DM Mono',monospace;font-size:0.8rem">#${req.id}</td>
+        <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m?.managerColor||'#ccc'};margin-right:6px"></span>${m?.name || 'Unknown'}</td>
+        <td>${req.type}</td>
+        <td>${req.startDate}</td>
+        <td>${req.endDate}</td>
+        <td>${days} day${days !== 1 ? 's' : ''}</td>
+        <td><span class="badge ${statusClass}">${req.status}</span></td>
+        <td>${req.override ? '<span class="badge badge-override">Override</span>' : '—'}</td>
+        <td><span class="badge" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border)">Archived</span></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function toggleCoverageArchive() {
+  const panel = document.getElementById('cov-archive-panel');
+  const chevron = document.getElementById('cov-archive-chevron');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function renderCoverageTable() {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Split assignments into active and archived based on PTO end date
+  const activeAssignments = coverageAssignments.filter(a => {
+    const req = reqById(a.ptoRequestId);
+    return req && req.endDate >= today;
+  });
+  const archivedAssignments = coverageAssignments.filter(a => {
+    const req = reqById(a.ptoRequestId);
+    return !req || req.endDate < today;
+  });
+
+  const roles = ['Primary', 'Secondary', 'Additional'];
+
+  function buildGroupedRows(assignments, isArchive) {
+    if (assignments.length === 0) return null;
+    const grouped = {};
+    assignments.forEach(a => {
+      if (!grouped[a.ptoRequestId]) grouped[a.ptoRequestId] = [];
+      grouped[a.ptoRequestId].push(a);
+    });
+
+    let html = '';
+    Object.entries(grouped).forEach(([reqId, group]) => {
+      const req = reqById(Number(reqId));
+      const requester = memberById(req?.memberId);
+      const reqLabel = req ? `${req.type} ${req.startDate}–${req.endDate}` : 'N/A';
+
+      group.forEach((a, idx) => {
+        const coverer = memberById(a.covererId);
+        const role = roles[idx] || `Additional ${idx - 1}`;
+        const rolePill = idx === 0
+          ? `<span class="badge badge-approved">${role}</span>`
+          : `<span class="badge badge-pending">${role}</span>`;
+
+        if (isArchive) {
+          html += `<tr style="opacity:0.72">
+            <td style="font-family:'DM Mono',monospace;font-size:0.8rem">#${a.id}</td>
+            <td>${reqLabel}</td>
+            <td>${requester?.name || 'N/A'}</td>
+            <td>${coverer?.name || 'N/A'}</td>
+            <td>${rolePill}</td>
+            <td style="font-size:0.8rem;color:var(--text2)">${a.rule}</td>
+            <td><span class="badge" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border)">Archived</span></td>
+          </tr>`;
+        } else {
+          const actionBtns = idx === 0
+            ? `<button class="btn btn-secondary btn-sm" onclick="openReassignModal(${req.id})">✏️ Reassign</button>
+               <button class="btn btn-danger btn-sm" onclick="removeCoverage(${a.id})">Remove</button>`
+            : `<button class="btn btn-danger btn-sm" onclick="removeCoverage(${a.id})">Remove</button>`;
+
+          html += `<tr>
+            <td style="font-family:'DM Mono',monospace;font-size:0.8rem">#${a.id}</td>
+            <td>${reqLabel}</td>
+            <td>${requester?.name || 'N/A'}</td>
+            <td>${coverer?.name || 'N/A'}</td>
+            <td>${rolePill}</td>
+            <td style="font-size:0.8rem;color:var(--text2)">${a.rule}</td>
+            <td style="white-space:nowrap;display:flex;gap:0.35rem;flex-wrap:wrap">${actionBtns}</td>
+          </tr>`;
+        }
+      });
+    });
+    return html;
+  }
+
+  // --- Active assignments ---
+  const tbody = document.getElementById('coverage-tbody');
+  const activeHtml = buildGroupedRows(activeAssignments, false);
+  tbody.innerHTML = activeHtml || '<tr class="empty-row"><td colspan="7">No active coverage assignments. Approve PTO requests and use Auto-Assign.</td></tr>';
+
+  // --- Archive count badge ---
+  const badge = document.getElementById('cov-archive-count-badge');
+  if (badge) badge.textContent = `${archivedAssignments.length} assignment${archivedAssignments.length !== 1 ? 's' : ''}`;
+
+  // --- Archived assignments ---
+  const archiveTbody = document.getElementById('cov-archive-tbody');
+  if (!archiveTbody) return;
+  const archivedHtml = buildGroupedRows(archivedAssignments, true);
+  archiveTbody.innerHTML = archivedHtml || '<tr class="empty-row"><td colspan="7">No archived coverage assignments yet.</td></tr>';
+}
+
+// ---- Calendar ----
+let calYear = new Date().getUTCFullYear();
+let calMonth = new Date().getUTCMonth();
+
+function buildWeeks(year, month) {
+  const first = new Date(Date.UTC(year, month, 1));
+  const last = new Date(Date.UTC(year, month + 1, 0));
+  const getMonStart = d => { const c = new Date(d); c.setUTCDate(c.getUTCDate() - ((c.getUTCDay() + 6) % 7)); c.setUTCHours(0,0,0,0); return c; };
+  const weeks = [];
+  let ws = getMonStart(first);
+  const lastWs = getMonStart(last);
+  while (ws <= lastWs) {
+    const week = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(ws); d.setUTCDate(ws.getUTCDate() + i); week.push(d);
+    }
+    weeks.push(week);
+    ws = new Date(ws); ws.setUTCDate(ws.getUTCDate() + 7);
+  }
+  return weeks;
+}
+
+function renderCalendar() {
+  const label = new Date(Date.UTC(calYear, calMonth, 1)).toLocaleDateString('en-US', { year: 'numeric', month: 'long', timeZone: 'UTC' });
+  document.getElementById('cal-month-label').textContent = label;
+
+  function getMonStart(d) { const c = new Date(d); c.setUTCDate(c.getUTCDate() - ((c.getUTCDay() + 6) % 7)); return c; }
+
+  // Helper: lighten a hex color for background tint
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return {r,g,b};
+  }
+  function tintColor(hex, opacity) {
+    try {
+      const {r,g,b} = hexToRgb(hex);
+      return `rgba(${r},${g},${b},${opacity})`;
+    } catch(e) { return '#f5f4f0'; }
+  }
+
+  const approvedReqs = ptoRequests.filter(r => r.status === 'Approved');
+
+  // Build per-request data: which weekdays they're out + their coverers
+  // Structure: { reqId: { req, member, color, ptoDates: Set, coverers: [] } }
+  const reqData = {};
+  approvedReqs.forEach(req => {
+    const member = memberById(req.memberId);
+    const color = member?.managerColor || '#cccccc';
+    const ptoDates = new Set();
+    const cur = toDate(req.startDate), end = toDate(req.endDate);
+    const c = new Date(cur);
+    while (c <= end) {
+      const day = c.getUTCDay(), ds = c.toISOString().split('T')[0];
+      if (day >= 1 && day <= 5 && !isFederalHoliday(ds)) ptoDates.add(ds);
+      c.setUTCDate(c.getUTCDate() + 1);
+    }
+    // Get coverers for this request
+    const coverers = coverageAssignments
+      .filter(a => a.ptoRequestId === req.id)
+      .map((a, idx) => ({ name: memberById(a.covererId)?.name || '?', role: idx === 0 ? 'Primary' : 'Secondary' }));
+    reqData[req.id] = { req, member, color, ptoDates, coverers };
+  });
+
+  const weeks = buildWeeks(calYear, calMonth);
+
+  if (approvedReqs.length === 0) {
+    document.getElementById('cal-container').innerHTML =
+      '<p style="color:var(--text3);text-align:center;padding:2rem">No PTO data to show. Add and approve PTO requests first.</p>';
+    return;
+  }
+
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:12px">`;
+  html += `<thead><tr>
+    <th style="background:#1a1917;color:white;padding:7px 10px;text-align:left;font-size:11px;border:0.5px solid #333;min-width:140px">Person on PTO</th>
+    <th style="background:#1a1917;color:white;padding:7px 8px;text-align:center;font-size:11px;border:0.5px solid #333">Mon</th>
+    <th style="background:#1a1917;color:white;padding:7px 8px;text-align:center;font-size:11px;border:0.5px solid #333">Tue</th>
+    <th style="background:#1a1917;color:white;padding:7px 8px;text-align:center;font-size:11px;border:0.5px solid #333">Wed</th>
+    <th style="background:#1a1917;color:white;padding:7px 8px;text-align:center;font-size:11px;border:0.5px solid #333">Thu</th>
+    <th style="background:#1a1917;color:white;padding:7px 8px;text-align:center;font-size:11px;border:0.5px solid #333">Fri</th>
+    <th style="background:#1a1917;color:white;padding:7px 10px;text-align:center;font-size:11px;border:0.5px solid #333;min-width:175px">Coverage</th>
+  </tr></thead><tbody>`;
+
+  weeks.forEach(week => {
+    const ws = getMonStart(week[0]).toISOString().split('T')[0];
+
+    // Date header row
+    html += `<tr>`;
+    html += `<td style="background:var(--surface2);padding:4px 10px;font-size:10px;font-weight:600;color:var(--text3);border:0.5px solid var(--border);text-transform:uppercase;letter-spacing:0.04em">Week of</td>`;
+    week.forEach(d => {
+      const m = String(d.getUTCMonth()+1).padStart(2,'0'), dy = String(d.getUTCDate()).padStart(2,'0');
+      html += `<td style="background:var(--surface2);padding:4px 8px;font-size:11px;font-weight:600;color:var(--text2);border:0.5px solid var(--border);text-align:center">${m}/${dy}</td>`;
+    });
+    html += `<td style="background:var(--surface2);border:0.5px solid var(--border)"></td></tr>`;
+
+    // Find which requests have any PTO day in this week
+    const weekDates = week.map(d => d.toISOString().split('T')[0]);
+    const activeReqs = Object.values(reqData).filter(rd =>
+      weekDates.some(ds => rd.ptoDates.has(ds))
+    );
+
+    if (activeReqs.length === 0) {
+      html += `<tr>
+        <td style="background:var(--surface);border:0.5px solid var(--border);padding:8px 10px;font-size:11px;color:var(--text3);font-style:italic">No PTO this week</td>
+        <td colspan="5" style="background:var(--surface);border:0.5px solid var(--border);text-align:center;color:var(--text3);font-size:11px;font-style:italic">—</td>
+        <td style="background:var(--surface2);border:0.5px solid var(--border)"></td>
+      </tr>`;
+    } else {
+      activeReqs.forEach(rd => {
+        const color = rd.color;
+        const chipBg = tintColor(color, 0.25);
+        const rowBg = tintColor(color, 0.08);
+
+        html += `<tr>`;
+        // Name column with left border in manager color
+        html += `<td style="background:var(--surface2);border:0.5px solid var(--border);border-left:3px solid ${color};padding:6px 10px;font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;vertical-align:middle">${rd.member?.name || '?'}</td>`;
+
+        // Day columns
+        week.forEach(d => {
+          const ds = d.toISOString().split('T')[0];
+          const isOut = rd.ptoDates.has(ds);
+          if (isOut) {
+            html += `<td style="background:${rowBg};border:0.5px solid var(--border);padding:5px 6px;text-align:center;vertical-align:middle">
+              <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;background:${chipBg};color:var(--text);white-space:nowrap">
+                <span style="width:7px;height:7px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>PTO
+              </span>
+            </td>`;
+          } else {
+            html += `<td style="background:var(--surface);border:0.5px solid var(--border);padding:5px;text-align:center;color:#d1cfc8;font-size:14px">–</td>`;
+          }
+        });
+
+        // Coverage column
+        html += `<td style="background:var(--surface2);border:0.5px solid var(--border);padding:6px 8px;vertical-align:middle">`;
+        if (rd.coverers.length === 0) {
+          html += `<span style="font-size:11px;color:var(--text3);font-style:italic">No coverage assigned</span>`;
+        } else {
+          rd.coverers.forEach(cov => {
+            const pillBg = cov.role === 'Primary' ? '#eff6ff' : '#fffbeb';
+            const pillColor = cov.role === 'Primary' ? '#1e3a8a' : '#92400e';
+            html += `<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+              <span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:999px;background:${pillBg};color:${pillColor};white-space:nowrap">${cov.role}</span>
+              <span style="font-size:11px;color:var(--text)">${cov.name}</span>
+            </div>`;
+          });
+        }
+        html += `</td></tr>`;
+      });
+    }
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById('cal-container').innerHTML = html;
+}
+
+function renderScores() {
+  const mode = document.getElementById('score-mode').value;
+  const refStr = new Date().toISOString().split('T')[0];
+  const ref = new Date(refStr);
+  const ws = new Date(ref); ws.setMonth(ws.getMonth() - 3);
+  const we = new Date(ref); we.setMonth(we.getMonth() + 3);
+  document.getElementById('score-window-label').textContent = `3-month window: ${ws.toISOString().split('T')[0]} → ${we.toISOString().split('T')[0]}`;
+
+  const scores = calculateScore(teamMembers, ptoRequests, coverageAssignments, mode, refStr);
+  const max = Math.max(...scores.map(s => s.score), 1);
+  const sorted = [...scores].sort((a, b) => b.score - a.score);
+
+  document.getElementById('score-list').innerHTML = `<div style="display:flex;flex-direction:column;gap:0.5rem">` +
+    sorted.map(s => {
+      const pct = Math.round((s.score / max) * 100);
+      return `<div style="display:grid;grid-template-columns:200px 1fr auto;gap:0.75rem;align-items:center;padding:0.4rem 0">
+        <span style="font-size:0.875rem;color:var(--text)">${s.name}</span>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+        <span class="score-val">${s.score}</span>
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function renderAvailAdmin() {
+  const grouped = {};
+  teamMembers.forEach(m => {
+    if (!grouped[m.manager]) grouped[m.manager] = [];
+    grouped[m.manager].push(m);
+  });
+  const sorted = Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
+
+  function availStatus(m) {
+    if (m.isCoverageAvailable !== false) return 'Available';
+    if (m.coverageLeaveStart && m.coverageLeaveEnd) return `Unavailable (${m.coverageLeaveStart} → ${m.coverageLeaveEnd})`;
+    return 'Unavailable';
+  }
+
+  let html = '';
+  sorted.forEach(([manager, members]) => {
+    html += `<div class="manager-group"><div class="manager-label">👤 ${manager}</div>`;
+    members.forEach(m => {
+      const avail = m.isCoverageAvailable !== false;
+      const emailVal = m.email || '';
+      const emailMissing = !emailVal;
+      html += `<div class="avail-row">
+        <div class="avail-name">
+          <input type="checkbox" ${avail ? 'checked' : ''} onchange="updateAvailability(${m.id}, 'available', this.checked)">
+          ${m.name}
+        </div>
+        <div class="avail-date-group" style="flex-direction:column;align-items:flex-start;gap:2px">
+          <label style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.03em">Email ${emailMissing ? '<span style="color:#c0392b">*</span>' : '✓'}</label>
+          <input type="email" value="${emailVal}" placeholder="name@partners.org"
+            style="width:100%;padding:0.3rem 0.5rem;font-size:0.8rem;border-color:${emailMissing ? '#f5c6c3' : 'var(--border2)'}"
+            onchange="updateAvailability(${m.id},'email',this.value)"
+            onblur="updateAvailability(${m.id},'email',this.value)">
+        </div>
+        <span class="avail-status">${availStatus(m)}</span>
+        <div class="avail-date-group">
+          <label style="font-size:0.75rem;color:var(--text3)">Leave Start</label>
+          <input type="date" value="${m.coverageLeaveStart||''}" ${avail ? 'disabled' : ''} onchange="updateAvailability(${m.id},'leaveStart',this.value)">
+        </div>
+        <div class="avail-date-group">
+          <label style="font-size:0.75rem;color:var(--text3)">Leave End</label>
+          <input type="date" value="${m.coverageLeaveEnd||''}" ${avail ? 'disabled' : ''} onchange="updateAvailability(${m.id},'leaveEnd',this.value)">
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('avail-admin').innerHTML = html;
+}
+
+function renderMemberSelect() {
+  const sel = document.getElementById('f-member');
+  sel.innerHTML = teamMembers.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+}
+
+function renderBlackoutDates() {
+  const year = new Date().getUTCFullYear();
+  const ranges = getBlackoutRanges(year);
+  document.getElementById('blackout-list').innerHTML = ranges.map(r =>
+    `<li>⛔ Blackout: ${r.start} to ${r.end}</li>`
+  ).join('');
+}
+
+// ============================================================
+// TOAST & MODAL HELPERS (global)
+// ============================================================
+let _confirmCallback = null;
+function showConfirm(title, msg, onConfirm) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  _confirmCallback = onConfirm;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function confirmResolve(yes) {
+  document.getElementById('confirm-modal').classList.remove('open');
+  if (yes && _confirmCallback) _confirmCallback();
+  _confirmCallback = null;
+}
+
+let _toastTimer = null;
+function showToast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? '#c0392b' : '#1a1917';
+  el.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.style.transform = 'translateX(-50%) translateY(80px)'; }, 3500);
+}
+function showError(msg) { showToast(msg, true); }
+
+// ============================================================
+// ACTIONS (global — called from onclick attributes)
+// ============================================================
+function approveReq(id) {
+  const req = reqById(id);
+  if (!req) return;
+  const { allowed, week, reason } = canApproveRequest(req);
+  if (!allowed) {
+    if (reason === 'blackout') showError('⛔ Cannot approve: overlaps blackout window. Use override to force.');
+    else showError(`⛔ Cannot approve: too many people off in week of ${week}. Use override to force.`);
+    return;
+  }
+  req.status = 'Approved';
+  // Always remove any existing assignments for this request before regenerating
+  // This ensures stale single-coverer data never blocks a fresh 2-coverer assignment
+  coverageAssignments = coverageAssignments.filter(a => a.ptoRequestId !== id);
+  coverageAssignments = generateCoverageAssignments(ptoRequests, coverageAssignments, teamMembers, req.override || false, false, false);
+  saveAll();
+  renderAll();
+  showToast('✅ Request approved and coverage assigned.');
+}
+
+function rejectReq(id) {
+  const req = reqById(id);
+  if (req) { req.status = 'Rejected'; saveAll(); renderAll(); showToast('Request rejected.'); }
+}
+
+function clearSinglePTO(id) {
+  const req = reqById(id);
+  if (!req) {
+    showError('This request no longer exists.');
+    renderAll();
+    return;
+  }
+  // Guard: do not allow clearing archived requests (end date already passed)
+  const today = new Date().toISOString().split('T')[0];
+  if (req.endDate < today) {
+    showError('Archived requests cannot be cleared. They are kept for historical record.');
+    return;
+  }
+  const m = memberById(req.memberId);
+  showConfirm(
+    'Delete PTO Request',
+    `Delete ${m?.name || 'Unknown'}'s PTO (${req.startDate} – ${req.endDate})? This will also remove associated coverage assignments.`,
+    () => {
+      // Re-check request still exists at time of confirmation
+      if (!reqById(id)) { showError('Request was already removed.'); renderAll(); return; }
+      ptoRequests = ptoRequests.filter(r => r.id !== id);
+      coverageAssignments = coverageAssignments.filter(a => a.ptoRequestId !== id);
+      saveAll();
+      renderAll();
+      showToast('✅ PTO request deleted.');
+    }
+  );
+}
+
+function openPwModal() {
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-error').textContent = '';
+  document.getElementById('pw-modal').classList.add('open');
+  setTimeout(() => document.getElementById('pw-input').focus(), 50);
+}
+
+function closePwModal() {
+  document.getElementById('pw-modal').classList.remove('open');
+}
+
+function confirmClearAll() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw !== 'Admin1020') {
+    document.getElementById('pw-error').textContent = '❌ Incorrect password. Please try again.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+    return;
+  }
+  closePwModal();
+  ptoRequests = []; coverageAssignments = []; nextPtoId = 1; nextCovId = 1;
+  saveAll();
+  renderAll();
+  showToast('All PTO requests cleared.');
+}
+
+function removeCoverage(id) {
+  coverageAssignments = coverageAssignments.filter(a => a.id !== id);
+  saveAll();
+  renderAll();
+  showToast('Coverage assignment removed.');
+}
+
+function fixUnderCoveredRequests() {
+  const approved = ptoRequests.filter(r => r.status === 'Approved');
+  let fixed = 0;
+  approved.forEach(req => {
+    const days = numberBusinessDays(req.startDate, req.endDate);
+    const needed = days >= 3 ? 2 : 1;
+    const existing = coverageAssignments.filter(a => a.ptoRequestId === req.id && !a.isOverrideExtra);
+    if (existing.length < needed) {
+      coverageAssignments = coverageAssignments.filter(a => a.ptoRequestId !== req.id);
+      coverageAssignments = generateCoverageAssignments(ptoRequests, coverageAssignments, teamMembers, req.override || false, false, false);
+      fixed++;
+    }
+  });
+  saveAll();
+  renderAll();
+  if (fixed > 0) showToast('✅ Fixed ' + fixed + ' under-covered request' + (fixed !== 1 ? 's' : '') + '.');
+  else showToast('All requests already have correct coverage.');
+}
+
+function autoAssignCoverage(override) {
+  const toAssign = ptoRequests.filter(r => r.status === 'Approved');
+  if (toAssign.length === 0) { showError('No approved PTO requests to assign coverage for.'); return; }
+  coverageAssignments = generateCoverageAssignments(ptoRequests, coverageAssignments, teamMembers, override, override, override);
+  saveAll();
+  renderAll();
+  showToast('✅ Coverage auto-assigned.');
+}
+
+function updateAvailability(memberId, field, value) {
+  teamMembers = teamMembers.map(m => {
+    if (m.id !== memberId) return m;
+    if (field === 'available') return { ...m, isCoverageAvailable: value, coverageLeaveStart: value ? '' : m.coverageLeaveStart, coverageLeaveEnd: value ? '' : m.coverageLeaveEnd };
+    if (field === 'leaveStart') return { ...m, isCoverageAvailable: false, coverageLeaveStart: value };
+    if (field === 'leaveEnd') return { ...m, isCoverageAvailable: false, coverageLeaveEnd: value };
+    if (field === 'email') return { ...m, email: value.trim() };
+    return m;
+  });
+  if (field !== 'email') coverageAssignments = replaceConflictingCoverers(ptoRequests, coverageAssignments, teamMembers);
+  saveAll();
+  if (field !== 'email') renderAll();
+}
+
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+// ============================================================
+// REASSIGN COVERAGE MODAL
+// ============================================================
+let _reassignPtoId = null;
+
+function openReassignModal(ptoReqId) {
+  const req = reqById(ptoReqId);
+  if (!req) return;
+  _reassignPtoId = ptoReqId;
+
+  const requester = memberById(req.memberId);
+  const days = numberBusinessDays(req.startDate, req.endDate);
+  document.getElementById('reassign-pto-info').innerHTML =
+    `<strong>${requester?.name || 'Unknown'}</strong> &nbsp;|&nbsp; ${req.type} &nbsp;|&nbsp; ${req.startDate} – ${req.endDate} &nbsp;|&nbsp; ${days} business day${days !== 1 ? 's' : ''}`;
+
+  // Get current coverers for this request
+  const existing = coverageAssignments.filter(a => a.ptoRequestId === ptoReqId);
+  const primaryId = existing[0]?.covererId || '';
+  const secondaryId = existing[1]?.covererId || '';
+
+  // Build options — mark members on PTO or unavailable during these dates
+  const onPTOIds = new Set(
+    ptoRequests
+      .filter(r => r.status === 'Approved' && r.id !== ptoReqId && dateRangesOverlap(r.startDate, r.endDate, req.startDate, req.endDate))
+      .map(r => r.memberId)
+  );
+
+  function buildOpts(includeNone) {
+    const opts = teamMembers
+      .filter(m => m.id !== req.memberId)
+      .map(m => {
+        const onPTO = onPTOIds.has(m.id);
+        const unavail = isMemberUnavailableForRange(m, req.startDate, req.endDate);
+        const excluded = isCoverageExcluded(m);
+        let label = m.name;
+        if (onPTO) label += ' ⚠ (on PTO)';
+        else if (unavail) label += ' ⚠ (unavailable)';
+        else if (excluded) label += ' ⚠ (excluded)';
+        return `<option value="${m.id}">${label}</option>`;
+      })
+      .join('');
+    return (includeNone ? `<option value="">— None —</option>` : '') + opts;
+  }
+
+  document.getElementById('reassign-primary').innerHTML = buildOpts(false);
+  document.getElementById('reassign-secondary').innerHTML = buildOpts(true);
+
+  if (primaryId) document.getElementById('reassign-primary').value = primaryId;
+  if (secondaryId) document.getElementById('reassign-secondary').value = secondaryId;
+  else document.getElementById('reassign-secondary').value = '';
+
+  document.getElementById('reassign-warnings').style.display = 'none';
+  document.getElementById('reassign-override').checked = false;
+  document.getElementById('reassign-save-btn').disabled = false;
+  document.getElementById('reassign-modal').classList.add('open');
+
+  // Run validation immediately so warnings show on open if existing coverers already violate rules
+  validateReassign();
+}
+
+function closeReassignModal() {
+  document.getElementById('reassign-modal').classList.remove('open');
+  _reassignPtoId = null;
+}
+
+function checkCovererViolations(memberId, ptoReqId) {
+  const violations = [];
+  const req = reqById(ptoReqId);
+  if (!req) return violations;
+  const member = memberById(memberId);
+  if (!member) return violations;
+
+  if (member.id === req.memberId)
+    violations.push('This person is the one taking PTO — they cannot cover themselves.');
+
+  const onPTO = ptoRequests.some(r =>
+    r.status === 'Approved' && r.memberId === memberId && r.id !== ptoReqId &&
+    dateRangesOverlap(r.startDate, r.endDate, req.startDate, req.endDate)
+  );
+  if (onPTO) violations.push('This person is on approved PTO during the same dates.');
+
+  if (isMemberUnavailableForRange(member, req.startDate, req.endDate))
+    violations.push('This person is marked unavailable for coverage during these dates.');
+
+  if (isCoverageExcluded(member))
+    violations.push('This person is on the coverage exclusion list.');
+
+  const otherAssignments = coverageAssignments.filter(a => a.ptoRequestId !== ptoReqId);
+  if (hasCoverageInSameOrAdjacentMonth(memberId, req, otherAssignments, ptoRequests))
+    violations.push('This person is already assigned coverage in the same or adjacent month.');
+
+  return violations;
+}
+
+function validateReassign() {
+  if (!_reassignPtoId) return;
+  const primaryId = parseInt(document.getElementById('reassign-primary').value);
+  const secondaryVal = document.getElementById('reassign-secondary').value;
+  const secondaryId = secondaryVal ? parseInt(secondaryVal) : null;
+
+  const allViolations = [];
+  if (primaryId) checkCovererViolations(primaryId, _reassignPtoId).forEach(m => allViolations.push(`Primary — ${m}`));
+  if (secondaryId) checkCovererViolations(secondaryId, _reassignPtoId).forEach(m => allViolations.push(`Secondary — ${m}`));
+  if (primaryId && secondaryId && primaryId === secondaryId)
+    allViolations.push('Primary and Secondary coverer cannot be the same person.');
+
+  const warningsEl = document.getElementById('reassign-warnings');
+  const warningList = document.getElementById('reassign-warning-list');
+  const overrideChecked = document.getElementById('reassign-override').checked;
+  const saveBtn = document.getElementById('reassign-save-btn');
+
+  if (allViolations.length > 0) {
+    warningsEl.style.display = 'block';
+    warningList.innerHTML = allViolations.map(v => `<li>${v}</li>`).join('');
+    saveBtn.disabled = !overrideChecked;
+  } else {
+    warningsEl.style.display = 'none';
+    warningList.innerHTML = '';
+    saveBtn.disabled = false;
+  }
+}
+
+function saveReassign() {
+  if (!_reassignPtoId) return;
+  const req = reqById(_reassignPtoId);
+  if (!req) return;
+
+  const primaryId = parseInt(document.getElementById('reassign-primary').value);
+  const secondaryVal = document.getElementById('reassign-secondary').value;
+  const secondaryId = secondaryVal ? parseInt(secondaryVal) : null;
+
+  if (!primaryId) { showError('Please select a Primary coverer.'); return; }
+
+  // Remove existing assignments for this request only
+  coverageAssignments = coverageAssignments.filter(a => a.ptoRequestId !== _reassignPtoId);
+
+  let nid = coverageAssignments.reduce((max, a) => Math.max(max, a.id), 0) + 1;
+  const days = numberBusinessDays(req.startDate, req.endDate);
+
+  coverageAssignments.push({
+    id: nid++, ptoRequestId: _reassignPtoId, covererId: primaryId,
+    rule: 'Manual assignment (Primary)', scoreImpact: days >= 3 ? 1.5 : 1, isOverrideExtra: false
+  });
+
+  if (secondaryId) {
+    coverageAssignments.push({
+      id: nid++, ptoRequestId: _reassignPtoId, covererId: secondaryId,
+      rule: 'Manual assignment (Secondary)', scoreImpact: days >= 3 ? 1.5 : 1, isOverrideExtra: false
+    });
+  }
+
+  saveAll();
+  renderAll();
+  closeReassignModal();
+  showToast('✅ Coverage manually reassigned.');
+}
+
+// ============================================================
+// DEPARTMENT DATA (from Department_Coverage_Listing_5_11_26.xlsx)
+// ============================================================
+const DEPARTMENT_DATA = {
+  'Acop, Alegria': { manager: 'Harris, Alanna', departments: [{ name: '42AA - Neurology (MGH)', complexity: 1368 }, { name: '42CA - Neurology Chief Funds (MGH)', complexity: 0 }] },
+  'Briggs, Caren': { manager: 'Morrison, Rob', departments: [{ name: '38AA - Cancer Center (MGH)', complexity: 835 }, { name: '38CA - Cancer Center Protocol Office (MGH)', complexity: 0 }, { name: '38DA - Cancer Center', complexity: 0 }, { name: '52AA - Pathology (MGH)', complexity: 282 }] },
+  'Brokmeier, Carol Ann': { manager: 'Morrison, Rob', departments: [{ name: '14FA- Pediatric Cardiology (MGH)', complexity: 0 }, { name: '30CB - Clinical & Translational Epidemiology Unit (MGH)', complexity: 0 }, { name: '30EB- Experimental Medicine Unit (MGH)', complexity: 0 }, { name: '38BA - Hematology/Oncology (MGH)', complexity: 382 }, { name: '50AA - Orthopedics (BWH)', complexity: 56 }, { name: '50EA - Sports Meeicine (MGH)', complexity: 53 }, { name: '56BA - Burn/Trauma (MGH)', complexity: 34 }, { name: '56EA - Transplant Surgery (MGH)', complexity: 80 }, { name: '56FA - Transplant Biology (TBRC) (MGH)', complexity: 0 }, { name: '56FB - Transplant Biology (TBRC II) (MGH)', complexity: 0 }, { name: '56RA - Surgery, Science & Engineering (MGH)', complexity: 410 }, { name: '56TA - CTS (MGH)', complexity: 100 }, { name: '16EA - CIMIT (MGH)', complexity: 38 }] },
+  'Buchan, Susan': { manager: 'Morrison, Rob', departments: [{ name: '10AA - Anesthesia (MGH)', complexity: 849 }, { name: '24AA - Oral and Maxillofacial Surgery (MGH)', complexity: 12 }, { name: '56AA - Surgery (MGH)', complexity: 51 }, { name: '56CA - Trauma Unit (MGH)', complexity: 10 }, { name: '56DA - Surgical Oncology (MGH)', complexity: 138 }, { name: '56GA - Cardiac Surgery (MGH)', complexity: 26 }, { name: '56HA - General Surgery (MGH)', complexity: 109 }, { name: '56IA - Plastic Surgery (MGH)', complexity: 5 }, { name: '56JA - Thoracic Surgery (MGH)', complexity: 73 }, { name: '56KA-Tissue Engineering (MGH)', complexity: 0 }, { name: '56LA - Vascular Surgery (BWH)', complexity: 46 }, { name: '56PA - Division of Laryngeal Surgery (MGH)', complexity: 26 }, { name: '56VA - Codman Center (MGH)', complexity: 0 }, { name: '58AA - Pediatric Surgery (MGH)', complexity: 168 }, { name: '62AA - Urology Service (MGH)', complexity: 37 }, { name: '82AA- Other', complexity: 0 }, { name: '82DA - Ctr Innov. Digital Healthcrae (MGH)', complexity: 2 }] },
+  'Cappellucci, Jim': { manager: 'Stringer, Lorraine', departments: [{ name: '44AA - Psychiatry (MGH)', complexity: 749 }, { name: '44EA - Neuroscience and Neuroimaging (MGH)', complexity: 669 }, { name: '36RA - B-BIC (BWH)', complexity: 0 }] },
+  'Cearley, Peyton': { manager: 'Stringer, Lorraine', departments: [{ name: '10AA - Anesthesia (NWH)', complexity: 0 }, { name: '14AA - Pediatric Service (BWH)', complexity: 135 }, { name: '14AA - Pediatric Service (MGH)', complexity: 41 }, { name: '14AA - Pediatric Service (NWH)', complexity: 1 }, { name: '14BA - Mucosal Immunology (MGH)', complexity: 117 }, { name: '14CA - Newborn Medicine (BWH)', complexity: 28 }, { name: '14CA - Newborn Medicine (MGH)', complexity: 55 }, { name: '14DA - Pediatric Allergy (MGH)', complexity: 8 }, { name: '14IA - Pediatric Endocrine (MGH)', complexity: 12 }, { name: '14KA - Pediatric Global Health (MGH)', complexity: 33 }, { name: '14MA - Pediatric Infectious Disease (MGH)', complexity: 0 }, { name: '14SA -  Pediatric Pallative Care (MGH)', complexity: 0 }, { name: '14TA -Pediatric Primary Care (MGH)', complexity: 2 }, { name: '18AA - Emergency Medicine (NWH)', complexity: 0 }, { name: '22AA - Obstetrics/Gynecology (NWH)', complexity: 1 }, { name: '30AA - Medicine (BWH)', complexity: 0 }, { name: '30AA - Medicine (NWH)', complexity: 0 }, { name: '30CA - Cardiology (NWH)', complexity: 0 }, { name: '30KA- General Internal Medicine (BWH)', complexity: 180 }, { name: '36DA - Other (NWH)', complexity: 0 }, { name: '42BA - Neurology Clinical Research Institute (MGH)', complexity: 0 }, { name: '42BB - Neuro Clinical Research Inst. (MGH)', complexity: 0 }, { name: '44BA - Mood and Anxiety Disorders (MGH)', complexity: 0 }, { name: '44GA - Precision Psychiatrity (MGH)', complexity: 0 }, { name: '44CA - Pediatric Psychopharmacology (MGH)', complexity: 0 }, { name: '44DA - Clinical Network and Institute (MGH)', complexity: 0 }, { name: '44FA - Benson Henry Institute (MGH)', complexity: 0 }, { name: '50AA - Orthopedics (NWH)', complexity: 0 }, { name: '56IA - Plastic Surgery (BWH)', complexity: 98 }, { name: '64AA - Research Management (BWH)', complexity: 1 }, { name: '64AA Research Management (MGH)', complexity: 2 }, { name: '64AA Research Management (NWH)', complexity: 0 }, { name: '64HA - CTSA (MGH)', complexity: 2 }, { name: '64HA - CTSA (BWH)', complexity: 0 }, { name: '70AA - Central Admin (NWH)', complexity: 0 }, { name: '72AA - Central Administration (NWH)', complexity: 0 }, { name: '80BA - MGB Admin', complexity: 1 }, { name: '80LA - MGB Research (MGB)', complexity: 0 }, { name: '80DA - MGB Community', complexity: 0 }, { name: '30IA - Infectious Disease (MGH)', complexity: 360 }] },
+  'Decelles, Chris': { manager: 'Morrison, Rob', departments: [{ name: '16BA - Dermatology Clinics (MGH)', complexity: 103 }, { name: '16CA - Dermatology - CBRC (MGH)', complexity: 431 }, { name: '16DA - Dermatology Adm (MGH)', complexity: 0 }, { name: '16GA-Dermatology - CURTIS (MGH)', complexity: 0 }, { name: '17AA - WCP Wellman Photomedicine (MGH)', complexity: 503 }, { name: '30FA - Lab of Computer Science (MGH)', complexity: 52 }, { name: '30MA - Palliative Care (MGH)', complexity: 39 }, { name: '60AA - Radiation Oncology (MGH)', complexity: 305 }, { name: '60BA - Steele Lab (MGH)', complexity: 241 }, { name: '80KA - Center for Connected Health (MGH)', complexity: 0 }, { name: '30JB - Rheumatology, Inflammation, and Immunity (MGH)', complexity: 54 }, { name: '30JA - Rheumatology, Inflammation, and Immunity (MGH)', complexity: 1 }] },
+  'Dejesus, Maribel': { manager: 'Stringer, Lorraine', departments: [{ name: '40AA - Neurosurgery (MGH)', complexity: 383 }, { name: '40BA - Neurosurgery/Neuros (MGH)', complexity: 55 }, { name: '54AA - Radiology (BWH)', complexity: 573 }, { name: '56EA - Transplant Surgery (BWH)', complexity: 0 }, { name: '56FA- Transplant Bioligy (TBRC) (BWH)', complexity: 0 }, { name: '56GA - Cardiac Surgery (BWH)', complexity: 77 }, { name: '56HA - General Surgery (General and GI) (BWH)', complexity: 18 }, { name: '56JA - Thoracic Surgery (BWH)', complexity: 21 }, { name: '56LA - Vascular Surgery (BWH)', complexity: 3 }, { name: '56QA - Surgery and Public Health (BWH)', complexity: 88 }] },
+  'Drakes, Lashante': { manager: 'Morrison, Rob', departments: [{ name: '18AA - Emergency Medicine (MGH)', complexity: 118 }, { name: '18BA - Emergency Medicine Network (MGH)', complexity: 101 }, { name: '18CA - Emergency Preparedness (MGH)', complexity: 32 }, { name: '22AA - OB/GYN Service', complexity: 123 }, { name: '36AA - Channing Division of Network Medicine  (BWH)', complexity: 0 }, { name: '36KA - Sleep Medicine (BWH)', complexity: 398 }, { name: '44AA- Psychiatry (BWH)', complexity: 268 }, { name: '11AA- CCIB Compul/Integrative Biology (MGH)', complexity: 118 }] },
+  'Gill, Tricia': { manager: 'Morrison, Rob', departments: [{ name: '30BA - Analytic and Translational Genetics (MGH)', complexity: 64 }, { name: '30BC - Med Practice Evaluation Center (MGH)', complexity: 0 }, { name: '30DB - OBI & Cardiology Innovation (BWH)', complexity: 0 }, { name: '30LB - Metabolism Unit (MGH)', complexity: 70 }, { name: '30RA - Renal Unit (MGH)', complexity: 211 }, { name: '30WA - Neuroendocrine (MGH)', complexity: 25 }, { name: '30WB  - Metabolism Unit REPRIEVE (MGH)', complexity: 0 }, { name: '50AA - Orthopedics (MGH)', complexity: 259 }, { name: '50EA - Sports Medicine (BWH)', complexity: 0 }, { name: '64JA - Trial Innovation (MGH)', complexity: 0 }, { name: '80LA - PHS Research (PHS)', complexity: 0 }, { name: '60AA- Radiation Oncology (BWH)', complexity: 97 }, { name: '30PA - Pulmonary (MGH)', complexity: 191 }] },
+  'Gilmore, Patrica': { manager: 'Harris, Alanna', departments: [{ name: '19AA - Center for Systems Biology (MGH)', complexity: 476 }] },
+  'Gilmore, Patricia': { manager: 'Harris, Alanna', departments: [{ name: '19AA - Center for Systems Biology (MGH)', complexity: 476 }] },
+  'Jackson, Darlene': { manager: 'Morrison, Rob', departments: [{ name: '20AA - Revere Health Center (MGH)', complexity: 0 }, { name: '20BA - Bunker Hill Health Center (MGH)', complexity: 0 }, { name: '20CA - Chelsea Health Center (MGH)', complexity: 0 }, { name: '20EA - Southern JP HC (BWH)', complexity: 0 }, { name: '42AA - Neurology (BWH)', complexity: 53 }, { name: '42DA - Division of Basic Neuroscience Research (BWH)', complexity: 368 }, { name: '42EA - Division of Cognitive and Behavioral Neurology (BWH)', complexity: 118 }, { name: '42FA - Division of Neuro Critical Care (BWH)', complexity: 19 }, { name: '42GA - Division of Epilepsy (BWH)', complexity: 38 }, { name: '42HA - Division of Headache & Pain (BWH)', complexity: 29 }, { name: '42IA - Division of General Neurology (BWH)', complexity: 0 }, { name: '42JA - Division of Movement Disorders (BWH)', complexity: 83 }, { name: '42KA - Division of Multiple Sclerosis & Neuro Immunology (BWH)', complexity: 648 }, { name: '42LA - Division of Neuromuscular Disease (BWH)', complexity: 6 }, { name: '42MA - Division of Neuro-Ophthalmology (BWH)', complexity: 0 }, { name: '42NA - Divsions of Neuro-Oncoloyg (BWH)', complexity: 18 }, { name: '42OA - Division of Sleep Neurology (BWH)', complexity: 1 }, { name: '42PA - Division of Stroke and Cerebrovascular (BWH)', complexity: 110 }, { name: '70BA - Central Administration (MGH)', complexity: 0 }, { name: '70FA - Nursing (BWH)', complexity: 7 }, { name: '70QA - VP Qual/Safety (MGH)', complexity: 0 }, { name: '72AA - Administration (BWH)', complexity: 0 }, { name: '80DA - Partners Community Benefits (MGH)', complexity: 8 }] },
+  'Lande, Kate': { manager: 'Stringer, Lorraine', departments: [{ name: '30CA - Cardiology (BWH)', complexity: 407 }, { name: '30DB - OVI & Cardiology Innovation (BWH)', complexity: 82 }, { name: '36IA - CVM TIMI (BWH)', complexity: 4 }, { name: '30IA - Infectious Disease (BWH)', complexity: 447 }, { name: '30PA - Pulmonary (BWH)', complexity: 873 }, { name: '64KA - Center for Integrated Solutions of Infectious Disease (BWH)', complexity: 0 }] },
+  'Lennon, Ann': { manager: 'Stringer, Lorraine', departments: [{ name: '80NA -  HRA (MGB)', complexity: 0 }, { name: '90AA - Division of Alcohol (mcLean)', complexity: 52 }, { name: '91AA - Basic Neuroscience Division (McLean)', complexity: 271 }, { name: '91CA - Bio-Organic and Natural Products Research Laboratory (McLean)', complexity: 0 }, { name: '93AA - Division of Geriatric Psychiatry (McLean)', complexity: 20 }, { name: '93BA - Geriatric Psych (McLean)', complexity: 4 }, { name: '94AA - Division of Depression & Anxiety Disorders (McLean)', complexity: 267 }, { name: '95AA - McLean Imaging Center (McLean)', complexity: 120 }, { name: "97AA - Division of Women's Mental Health (McLean)", complexity: 38 }, { name: '98BA - Health Services Research (McLean)', complexity: 2 }, { name: '98CA - Center for Depression, Anxiety & Stress Research (McLean)', complexity: 165 }, { name: '98DA - PEAR Institute-Partnerships in Education & Resiliency (McLean)', complexity: 76 }, { name: '98EA - Institute for Technology in Psychiatry (McLean)', complexity: 26 }, { name: '98HA - Neuroregeneration Research Institute (McLean)', complexity: 21 }, { name: '99AA - Administration (McLean)', complexity: 0 }, { name: '92AA - Child and Adolescent Psychiatry Department (McLean)', complexity: 65 }, { name: '96AA - Psychotic Disorders Department (McLean)', complexity: 108 }, { name: '62AA Urology Service (BWH)', complexity: 164 }] },
+  'Maldonis, Joanne': { manager: 'Harris, Alanna', departments: [{ name: '36CA - Genetics (BWH)', complexity: 387 }, { name: '36EA - Pharmacoepidemiology (BWH)', complexity: 271 }, { name: "36GA - Women's Health (BWH)", complexity: 38 }, { name: '40AA - Neurosurgery (BWH)', complexity: 292 }] },
+  'McCaig, Lisa': { manager: 'Harris, Alanna', departments: [{ name: '30EA - Endocrine (BWH)', complexity: 218 }, { name: '30EA - Endocrine Unit', complexity: 135 }, { name: '54GA - GCMI (MGH)', complexity: 348 }] },
+  'McCarthy, Tristienne': { manager: 'Morrison, Rob', departments: [{ name: '29AA - Infection Control (MGH)', complexity: 0 }, { name: '30BC - Med Practice Evaluation Center (MGH)', complexity: 224 }, { name: '30CB - Clinical & Translational Epidemiology Unit (MGH)', complexity: 141 }, { name: '30IB - Med Practice Eval Ctr-Phys Res', complexity: 0 }, { name: '30GA - GI Unit (MGH)', complexity: 320 }, { name: '54AA - Radiology (MGH)', complexity: 144 }, { name: '54BA - Nuclear Medicine (MGH)', complexity: 133 }, { name: '54EA - GI Radiology (MGH)', complexity: 166 }, { name: '54FA - Center for Imaging (MGH)', complexity: 6 }, { name: '54HA - Joint Ctr. Radiology Research (MGH)', complexity: 73 }, { name: '54JA - Center for Imaging (MGH)', complexity: 35 }, { name: '70TA-Center for Global Health (MGH)', complexity: 55 }] },
+  'McWilliams, Juliana': { manager: 'Stringer, Lorraine', departments: [{ name: '10AA- Anesthesia (BWH)', complexity: 901 }, { name: '30LA - Reproductive Endocrine (BWH)', complexity: 54 }, { name: '36HA - Undiagnosed Diseases Network (BWH)', complexity: 0 }, { name: '36LA - Aging (BWH)', complexity: 53 }, { name: "82CA - Connors Center for Women's Health and Gender Biology (BWH)", complexity: 3 }] },
+  'Oviedo, Julissa': { manager: 'Stringer, Lorraine', departments: [{ name: '20DA - Brookside HC (BWH)', complexity: 0 }, { name: '30BB - Disparities Research Unit (MGH)', complexity: 15 }, { name: '30LA - Reproductive Endocrine (BWH)', complexity: 0 }, { name: '30RA - Renal (BWH)', complexity: 433 }, { name: '30RB - Engineering in Medicine (BWH)', complexity: 882 }] },
+  'Plyler, Lori': { manager: 'Harris, Alanna', departments: [{ name: '40AA - Neurology (MGH)', complexity: 225 }, { name: '30CA - Cardiac Unit (MGH)', complexity: 597 }, { name: '30DA - Diabetes (MGH)', complexity: 59 }, { name: '30LA - Medical Services Reproductive Endocrine (MGH)', complexity: 46 }, { name: '30OA - Rheum, Allergy and Immunology (MGH)', complexity: 255 }, { name: '30UA - Biostatistics (MGH)', complexity: 60 }] },
+  'Ryan, Manoushka': { manager: 'Morrison, Rob', departments: [{ name: '16AA - Dermatology (BWH)', complexity: 225 }, { name: '30FB - Mongan Institute for Health Policy (MGH)', complexity: 11 }, { name: '30HA - Hematology (BWH)', complexity: 243 }, { name: '32AA - Mongan Institute for Health Policy (MGH)', complexity: 60 }, { name: '36AA - Channing Division of Network Medicine  (BWH)', complexity: 541 }] },
+  'Singleton, Rob': { manager: 'Harris, Alanna', departments: [{ name: '54CA - Martinos Center (MGH)', complexity: 1558 }, { name: '54DA- Radiological Sciences (MGH)', complexity: 59 }, { name: '54KA - Neuroprotection Research (MGH)', complexity: 21 }, { name: '54LA - Radiology/Cardiac Imaging (MGH)', complexity: 46 }, { name: '54LB - Radiology (REPRIEVE) (MGH)', complexity: 0 }] },
+  'Theriault, Sarah': { manager: 'Stringer, Lorraine', departments: [{ name: '14GA - Pediatric Critical Care (MGH)', complexity: 24 }, { name: '14JA - Pediatric Genetics (MGH)', complexity: 49 }, { name: '14LA - Pediatric Hematology/Oncology (MGH)', complexity: 15 }, { name: '14NA - Pediatric GI/Nutrition (MGH)', complexity: 46 }, { name: '14PA - Pediatric Pulmonary/CF (MGH)', complexity: 29 }, { name: '14RA - Pediaqtric and Adolescent Medicine (MGH)', complexity: 6 }, { name: '15AA - Center for Genomic Medicine (MGH)', complexity: 67 }, { name: '15EA – CGM Pediatrics', complexity: 3 }, { name: '15HA – CGM Anesthesia', complexity: 56 }, { name: '15MA – CGM Medicine', complexity: 6 }, { name: '15MC – CGM Cardiology', complexity: 6 }, { name: '15ME – CGM Endocrinology', complexity: 39 }, { name: '15NA – CGM Neurology', complexity: 286 }, { name: '15PA – CGM Psychiatry', complexity: 112 }, { name: '15TA - CGM Psyc', complexity: 13 }, { name: '18AA - Emergency Med - BWH', complexity: 175 }, { name: '22AA - Obstetrics/Gynecology (BWH)', complexity: 93 }, { name: '22DA - Other (BWH)', complexity: 61 }, { name: '22EA- GYN Oncology (BWH)', complexity: 4 }, { name: '30IA - Infectious Disease (BWH)', complexity: 0 }, { name: '64LA - GCTI & PM (BWH)', complexity: 40 }, { name: '70FA - Nursing (BWH)', complexity: 0 }, { name: '70GA-Social Service (BWH)', complexity: 18 }, { name: '70UA- Pharmacy (BWH)', complexity: 2 }, { name: '72AA - Administration (BWH)', complexity: 0 }, { name: '82AA - Other (BWH)', complexity: 0 }] },
+  'Wong, Helen': { manager: 'Harris, Alanna', departments: [{ name: '24AA- Oral and Maxillofacal Surgery and Dental (BWH)', complexity: 2 }, { name: '30JA - Immunology Unit (BWH)', complexity: 303 }, { name: '36JA - Preventive Medicine (BWH)', complexity: 154 }, { name: '30MB-Allergy and Clinical Immunology (BWH)', complexity: 249 }, { name: '36MA - Global Health Equity (BWH)', complexity: 211 }, { name: '56AA - Surgery (BWH)', complexity: 0 }, { name: '56BA- Burn/Trauma (BWH)', complexity: 18 }, { name: '56DA - Surgical Oncology (BWH)', complexity: 2 }, { name: '56MA - Ophthalmology Surgery (BWH)', complexity: 44 }, { name: '56NA - Joint Center for Health Systems Innovation (BWH)', complexity: 63 }, { name: '56OA - CALGB (BWH)', complexity: 84 }, { name: '56SA - Otolaryngology (BWH)', complexity: 3 }, { name: '56WA - Breast Surgery (BWH)', complexity: 73 }, { name: '70FA - Nursing (MGH)', complexity: 9 }, { name: '70GA-Social Service (MGH)', complexity: 0 }] },
+  'Wyche, Nyjah': { manager: 'Harris, Alanna', departments: [{ name: '14EA - Child Research and Policy (MGH)', complexity: 29 }, { name: '14QA - General Pediatrics (MGH)', complexity: 4 }, { name: '30GA - Gastroenterology (BWH)', complexity: 163 }, { name: '30KA - General Internal Medicine (MGH)', complexity: 126 }, { name: '43AA - Lurie Center (MGH)', complexity: 155 }, { name: '50BA- Rehab Medicine (MGH)', complexity: 0 }, { name: '52AA - Pathology (BWH)', complexity: 862 }, { name: '64DA - Research Institute Admin (MGH)', complexity: 0 }, { name: '64GA - Ctr for Comparative Medicine (MGH)', complexity: 1 }, { name: '70AA- Central Admin/COO President (MGH)', complexity: 0 }, { name: '70CA - Nutrition and Food (MGH)', complexity: 0 }] },
+};
+
+// ============================================================
+// INVITE LOGIC
+// ============================================================
+let _invitePtoId = null;
+let _inviteMailtoUrl = null;
+let _inviteFileName = null;
+let _inviteReminderUrl = null;
+let _inviteReminderFileName = null;
+
+function splitDepartmentsForInvite(departments, primary, secondary) {
+  if (!departments || departments.length === 0) {
+    return { assign: { [primary]: [], ...(secondary ? { [secondary]: [] } : {}) }, totals: { [primary]: 0, ...(secondary ? { [secondary]: 0 } : {}) } };
+  }
+  if (!secondary) {
+    return { assign: { [primary]: departments }, totals: { [primary]: departments.reduce((s, d) => s + d.complexity, 0) } };
+  }
+  const sorted = [...departments].sort((a, b) => b.complexity - a.complexity);
+  const assign = { [primary]: [], [secondary]: [] };
+  const totals = { [primary]: 0, [secondary]: 0 };
+  sorted.forEach(dept => {
+    const ps = totals[primary] * 1000 + assign[primary].length;
+    const ss = totals[secondary] * 1000 + assign[secondary].length;
+    const lower = ps <= ss ? primary : secondary;
+    assign[lower].push(dept);
+    totals[lower] += dept.complexity;
+  });
+  return { assign, totals };
+}
+
+function getFirstName(fullName) {
+  if (!fullName) return '';
+  // Handle "Last, First" format
+  if (fullName.includes(',')) return fullName.split(',')[1].trim().split(/\s+/)[0];
+  // Handle "First Last" or "First Middle Last" — everything except the last word
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return parts.slice(0, -1).join(' ');
+}
+
+function openInviteModal(ptoReqId) {
+  const req = reqById(ptoReqId);
+  if (!req) return;
+  _invitePtoId = ptoReqId;
+
+  const member = memberById(req.memberId);
+  const memberName = member?.name || 'Unknown';
+
+  // Get coverers — guard against missing assignments
+  const assignments = coverageAssignments.filter(a => a.ptoRequestId === ptoReqId);
+  const primaryCoverer = assignments[0] ? memberById(assignments[0].covererId) : null;
+  const secondaryCoverer = assignments[1] ? memberById(assignments[1].covererId) : null;
+
+  // Only pass non-empty names to split function
+  const primaryName = primaryCoverer?.name || null;
+  const secondaryName = secondaryCoverer?.name || null;
+
+  // Look up departments — two-pass: last+first match, then last-name-only fallback
+  // App stores names as "First Last", DEPARTMENT_DATA keys are "Last, First"
+  const nameParts = memberName.trim().split(/\s+/);
+  const appLastName = nameParts[nameParts.length - 1].toLowerCase();
+  const appFirstName = nameParts[0].toLowerCase();
+
+  let deptKey = null;
+  // Pass 1: match last name + first name
+  for (const k of Object.keys(DEPARTMENT_DATA)) {
+    const kParts = k.split(',');
+    const kLast = kParts[0].trim().toLowerCase();
+    const kFirst = kParts.length > 1 ? kParts[1].trim().toLowerCase() : '';
+    const kFirstWord = kFirst.split(/\s+/)[0];
+    if (kLast === appLastName && (kFirstWord === appFirstName || kFirst.startsWith(appFirstName))) {
+      deptKey = k;
+      break;
+    }
+  }
+  // Pass 2: last name only (handles first-name spelling variations e.g. Alergia/Alegria)
+  if (!deptKey) {
+    const lastMatches = Object.keys(DEPARTMENT_DATA).filter(k =>
+      k.split(',')[0].trim().toLowerCase() === appLastName
+    );
+    if (lastMatches.length === 1) deptKey = lastMatches[0];
+  }
+
+  const deptInfo = deptKey ? DEPARTMENT_DATA[deptKey] : null;
+  const departments = deptInfo?.departments || [];
+
+  // ── Email validation — block if required parties missing email ──
+  const missingEmails = [];
+  if (!member?.email) missingEmails.push(memberName + ' (person on PTO)');
+  if (primaryCoverer && !primaryCoverer.email) missingEmails.push(primaryName + ' (Primary coverer)');
+  if (secondaryCoverer && !secondaryCoverer.email) missingEmails.push(secondaryName + ' (Secondary coverer)');
+
+  const inviteBtn = document.getElementById('invite-outlook-btn');
+  if (missingEmails.length > 0) {
+    document.getElementById('invite-content').innerHTML = `
+      <div style="background:var(--danger-soft);border:1px solid #f5c6c3;border-radius:var(--radius-sm);padding:0.85rem 1rem;font-size:0.875rem;color:var(--danger)">
+        <strong>⚠️ Missing email addresses</strong>
+        <p style="margin-top:0.4rem;font-size:0.82rem">The following people are missing email addresses. Please add them in <strong>Settings/Admin</strong> before sending the invite:</p>
+        <ul style="margin:0.5rem 0 0 1.2rem;font-size:0.82rem;line-height:1.8">
+          ${missingEmails.map(n => `<li>${n}</li>`).join('')}
+        </ul>
+      </div>`;
+    if (inviteBtn) inviteBtn.disabled = true;
+    _inviteMailtoUrl = null;
+    _inviteFileName = null;
+    document.getElementById('invite-modal').classList.add('open');
+    return;
+  }
+  if (inviteBtn) inviteBtn.disabled = false;
+  const splitPrimary = primaryName || 'Unassigned Primary';
+  const splitSecondary = secondaryName || null;
+  const { assign, totals } = splitDepartmentsForInvite(departments, splitPrimary, splitSecondary);
+
+  // Managers — deduplicated
+  const managerSet = new Set();
+  if (member?.manager) managerSet.add(member.manager);
+  if (primaryCoverer?.manager) managerSet.add(primaryCoverer.manager);
+  if (secondaryCoverer?.manager) managerSet.add(secondaryCoverer.manager);
+  const managers = Array.from(managerSet).filter(Boolean);
+
+  // Format dates
+  const fmtDate = ds => { const d = new Date(ds + 'T00:00:00'); return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }); };
+  const startFmt = fmtDate(req.startDate);
+  const endFmt = fmtDate(req.endDate);
+  const firstName = getFirstName(memberName);
+  // lastName: for "Last, First" → before comma; for "First Last" → last word
+  const lastName = memberName.includes(',')
+    ? memberName.split(',')[0].trim()
+    : memberName.trim().split(/\s+/).pop();
+
+  // Greeting using coverer first names
+  const covererFirstNames = [primaryCoverer, secondaryCoverer].filter(Boolean).map(m => getFirstName(m.name));
+  const greeting = covererFirstNames.length > 0 ? `Good morning ${covererFirstNames.join(' and ')},` : 'Good morning,';
+
+  // Build department rows HTML — safe array access
+  let deptRowsHtml = '';
+  let daSplitHtml = '';   // extra DA section appended below the table
+  let daSplitPlain = '';  // plain-text version for ICS DESCRIPTION
+
+  if (departments.length === 0) {
+    deptRowsHtml = `<tr><td colspan="2" style="font-style:italic;color:var(--text3);text-align:center;padding:0.75rem">No departments on file for this member.</td></tr>`;
+  } else if (!primaryName) {
+    deptRowsHtml = `<tr><td colspan="2" style="font-style:italic;color:var(--text3);text-align:center;padding:0.75rem">No coverage assigned yet — auto-assign coverage first.</td></tr>`;
+  } else {
+    const primaryDepts = (assign[splitPrimary] || []).map(d => ({ ...d, coverer: primaryName, role: 'Primary' }));
+    const secondaryDepts = splitSecondary ? (assign[splitSecondary] || []).map(d => ({ ...d, coverer: secondaryName, role: 'Secondary' })) : [];
+    const allDepts = [...primaryDepts, ...secondaryDepts];
+    allDepts.forEach((d, idx) => {
+      const rowBg = idx % 2 === 0 ? 'background:#ffffff' : 'background:#dce8f0';
+      const nameParts = d.coverer.trim().split(/\s+/);
+      const covererDisplay = nameParts.length > 1
+        ? nameParts[nameParts.length - 1] + ', ' + nameParts.slice(0, -1).join(' ')
+        : d.coverer;
+      deptRowsHtml += `<tr style="${rowBg}">
+        <td style="padding:7px 12px;border:0.5px solid #b8c8d4;font-size:13.5px;color:#0f0e0c">${d.name}</td>
+        <td style="padding:7px 12px;border:0.5px solid #b8c8d4;font-size:13.5px;font-weight:600;color:#0a0908;white-space:nowrap">${covererDisplay}</td>
+      </tr>`;
+
+      // Check for DA split for this member + dept combination
+      const daSplitKey = `${memberName}|${d.name.split(' - ')[0].trim()}`;
+      const daSplit = DA_SPLITS[daSplitKey];
+      if (daSplit) {
+        // HTML version
+        const groupsHtml = daSplit.groups.map((g, gi) => `
+          <div style="margin-bottom:${gi < daSplit.groups.length - 1 ? '10px' : '0'}">
+            <div style="font-size:12.5px;font-weight:600;color:#0a0908;margin-bottom:4px">${g.role}:</div>
+            ${g.das.map(da => `<div style="font-size:12px;color:#0f0e0c;padding:1px 0 1px 12px">• ${da}</div>`).join('')}
+          </div>`).join('');
+        daSplitHtml += `
+          <div style="margin-top:10px;padding:10px 12px;background:#f0faf9;border:0.5px solid #b3dfd1;border-radius:6px;font-family:Calibri,Arial,sans-serif">
+            <div style="font-size:12px;font-weight:600;color:#01828E;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em">${daSplit.label}</div>
+            <div style="font-size:12px;color:#4a4844;margin-bottom:8px">${daSplit.note}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${groupsHtml}</div>
+          </div>`;
+
+        // Plain text version for ICS
+        daSplitPlain += `\n${daSplit.label}\n${daSplit.note}\n` +
+          daSplit.groups.map(g => `${g.role}:\n${g.das.map(da => `  - ${da}`).join('\n')}`).join('\n\n');
+      }
+    });
+  }
+
+  // Complexity totals — safe access
+  const primaryTotal = totals[splitPrimary] || 0;
+  const secondaryTotal = splitSecondary ? (totals[splitSecondary] || 0) : 0;
+  const primaryDeptCount = (assign[splitPrimary] || []).length;
+  const secondaryDeptCount = splitSecondary ? (assign[splitSecondary] || []).length : 0;
+
+  // Render modal content
+  document.getElementById('invite-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.85rem">
+      <div style="background:#e8f5f0;border:1px solid #b3dfd1;border-radius:var(--radius-sm);padding:0.6rem 0.85rem">
+        <div style="font-size:0.72rem;color:var(--text2);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Primary</div>
+        <div style="font-size:0.875rem;font-weight:600;color:var(--text)">${primaryName || '— Not assigned —'}</div>
+        <div style="font-size:0.75rem;color:var(--text2)">${primaryTotal} complexity pts · ${primaryDeptCount} dept${primaryDeptCount !== 1 ? 's' : ''}</div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);padding:0.6rem 0.85rem">
+        <div style="font-size:0.72rem;color:var(--text2);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Secondary</div>
+        <div style="font-size:0.875rem;font-weight:600;color:var(--text)">${secondaryName || '— Not assigned —'}</div>
+        <div style="font-size:0.75rem;color:var(--text2)">${secondaryTotal} complexity pts · ${secondaryDeptCount} dept${secondaryDeptCount !== 1 ? 's' : ''}</div>
+      </div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.75rem 1rem;margin-bottom:0.85rem;font-size:0.82rem;line-height:1.7">
+      <div style="display:grid;grid-template-columns:80px 1fr;gap:4px 8px;margin-bottom:6px">
+        <span style="font-weight:600;color:var(--text2)">Title:</span>
+        <span>${firstName} ${lastName} PTO ${startFmt} – ${endFmt}</span>
+        <span style="font-weight:600;color:var(--text2)">Required:</span>
+        <span>${[memberName, primaryName, secondaryName].filter(Boolean).map(n => {
+          const m = teamMembers.find(tm => tm.name === n);
+          return m?.email ? `${n} <span style="color:var(--text3);font-size:0.75rem">&lt;${m.email}&gt;</span>` : n;
+        }).join(' · ')}</span>
+        <span style="font-weight:600;color:var(--text2)">Optional:</span>
+        <span>${(() => {
+          const optList = managers.map(n => {
+            const email = MANAGER_EMAILS[n] || teamMembers.find(tm => tm.name === n)?.email || '';
+            return email ? `${n} <span style="color:var(--text3);font-size:0.75rem">&lt;${email}&gt;</span>` : `${n} <span style="color:var(--text3);font-size:0.75rem">(no email)</span>`;
+          });
+          // Add Juliana if Harris is involved
+          const harrisInvolved = managers.includes('Harris, Alanna') ||
+            member?.manager === 'Harris, Alanna' ||
+            primaryCoverer?.manager === 'Harris, Alanna' ||
+            secondaryCoverer?.manager === 'Harris, Alanna';
+          if (harrisInvolved) {
+            const juliana = teamMembers.find(m => m.name === 'Juliana McWilliams');
+            if (juliana) optList.push(`Juliana McWilliams <span style="color:var(--text3);font-size:0.75rem">&lt;${juliana.email || 'no email'}&gt;</span>`);
+          }
+          return optList.join(' · ') || '—';
+        })()}</span>
+        <span style="font-weight:600;color:var(--text2)">Dates:</span>
+        <span>${req.startDate} – ${req.endDate} (All day)</span>
+      </div>
+      <hr style="border:none;border-top:0.5px solid var(--border);margin:8px 0">
+      <div style="font-size:13.5px;line-height:1.75;color:#0f0e0c;margin-bottom:10px">${greeting}</div>
+      <div style="font-size:13.5px;line-height:1.75;color:#0f0e0c;margin-bottom:14px">${firstName} has requested PTO from ${startFmt} through ${endFmt}. They will let you know if anything is due during this time.</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;table-layout:fixed">
+        <tbody>${deptRowsHtml}</tbody>
+      </table>
+      ${daSplitHtml}
+    </div>`;
+
+  // Build ICS calendar file content
+
+  // ICS date format: YYYYMMDD
+  const icsDate = ds => ds.replace(/-/g, '');
+  // End date for all-day event must be day AFTER in ICS format
+  const icsEndDate = ds => {
+    const d = new Date(ds + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().split('T')[0].replace(/-/g, '');
+  };
+  const uid = `pto-${req.id}-${Date.now()}@pto-coverage-manager`;
+  const now = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+
+  // Build attendee lines with real emails
+  // Helper: look up manager member object by name string
+  function findManagerMember(managerName) {
+    return teamMembers.find(m => m.name === managerName || m.name.toLowerCase() === managerName.toLowerCase());
+  }
+
+  const toNames = [memberName, primaryName, secondaryName].filter(Boolean);
+  const toEmails = [member?.email, primaryCoverer?.email, secondaryCoverer?.email].filter(Boolean);
+
+  // Managers as optional — exclude Morrison since he is the ORGANIZER
+  // Adding the organizer as an attendee causes Outlook to demote him to recipient
+  const managerLines = managers
+    .filter(mgrName => mgrName !== 'Morrison, Rob')
+    .map(mgrName => {
+      const mgrEmail = MANAGER_EMAILS[mgrName] || teamMembers.find(m => m.name === mgrName)?.email || '';
+      const cn = mgrName.replace(/,\s*/g, ' ');
+      const emailAddr = mgrEmail || 'noreply@pto-manager.local';
+      return `ATTENDEE;ROLE=OPT-PARTICIPANT;PARTSTAT=NEEDS-ACTION;CN=${cn}:mailto:${emailAddr}`;
+    });
+
+  // When Harris, Alanna is any involved manager, also add Juliana McWilliams as optional
+  const extraOptionalLines = [];
+  const isHarrisInvolved = managers.includes('Harris, Alanna') ||
+    member?.manager === 'Harris, Alanna' ||
+    primaryCoverer?.manager === 'Harris, Alanna' ||
+    secondaryCoverer?.manager === 'Harris, Alanna';
+
+  if (isHarrisInvolved) {
+    const juliana = teamMembers.find(m => m.name === 'Juliana McWilliams');
+    if (juliana) {
+      const julianaEmail = juliana.email || 'noreply@pto-manager.local';
+      extraOptionalLines.push(
+        `ATTENDEE;ROLE=OPT-PARTICIPANT;PARTSTAT=NEEDS-ACTION;CN=Juliana McWilliams:mailto:${julianaEmail}`
+      );
+    }
+  }
+
+  const attendeeLines = [
+    ...toNames.map((n, i) => {
+      const email = toEmails[i] || 'noreply@pto-manager.local';
+      return `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=${n.replace(/,\s*/g,' ')}:mailto:${email}`;
+    }),
+    ...managerLines,
+    ...extraOptionalLines
+  ].join('\r\n');
+
+  // Build ICS description — plain text fallback + HTML alternative for Outlook 365
+  const toLastFirstICS = name => {
+    if (!name) return '';
+    if (name.includes(',')) return name;
+    const parts = name.trim().split(/\s+/);
+    if (parts.length < 2) return name;
+    return parts[parts.length - 1] + ', ' + parts.slice(0, -1).join(' ');
+  };
+  const primaryDepts2 = primaryName ? (assign[splitPrimary] || []) : [];
+  const secondaryDepts2 = secondaryName ? (assign[splitSecondary] || []) : [];
+  const allDeptsICS = [
+    ...primaryDepts2.map(d => ({ name: d.name, coverer: toLastFirstICS(primaryName) })),
+    ...secondaryDepts2.map(d => ({ name: d.name, coverer: toLastFirstICS(secondaryName) }))
+  ];
+
+  // ── Document links ──
+  const rolesUrl = 'https://partnershealthcare-my.sharepoint.com/:x:/r/personal/rbmorrison_mgb_org/Documents/Apps/PTO%20Calendar%20App/PTO%20%20Coverage%20Roles%20and%20Responsibilities%201.xlsx?d=wed2d61ac698d4bb880af3e3d8be46f0a&csf=1&web=1&e=oFzNZv';
+  const sopUrl = 'https://partnershealthcare-my.sharepoint.com/:w:/r/personal/rbmorrison_mgb_org/Documents/Apps/PTO%20Calendar%20App/PTO%20SOP%205.11.2026.docx?d=we1fa11c9fe9f4b89a4e4860c63105cd0&csf=1&web=1&e=kaUxNz';
+  const linksHtml = `<p style="margin:14px 0 4px;font-family:Calibri,Arial,sans-serif;font-size:13px;color:#4a4844">Reference documents:</p><p style="margin:0;font-family:Calibri,Arial,sans-serif;font-size:13px"><a href="${rolesUrl}" style="color:#003A96">PTO Coverage Roles and Responsibilities</a> &nbsp;|&nbsp; <a href="${sopUrl}" style="color:#003A96">PTO SOP</a></p>`;
+  const linksPlain = `\nReference documents:\nPTO Coverage Roles and Responsibilities: ${rolesUrl}\nPTO SOP: ${sopUrl}`;
+
+  // Plain text fallback (DESCRIPTION field)
+  const deptLines = [
+    greeting,
+    '',
+    `${firstName} has requested PTO from ${startFmt} through ${endFmt}. They will let you know if anything is due during this time.`,
+    '',
+    ...allDeptsICS.map(d => `${d.name}    ${d.coverer}`),
+    ...(daSplitPlain ? [daSplitPlain] : []),
+    '',
+    'Reference documents:',
+    `PTO Coverage Roles and Responsibilities: ${rolesUrl}`,
+    `PTO SOP: ${sopUrl}`
+  ].join('\n');
+
+  // HTML alternative (X-ALT-DESC) — Outlook 365 renders this as formatted table
+  const tableRows = allDeptsICS.map((d, idx) => {
+    const bg = idx % 2 === 0 ? '#ffffff' : '#dce8f0';
+    return `<tr><td style="padding:7px 12px;border:1px solid #b8c8d4;font-size:14px;color:#0f0e0c;background:${bg}">${d.name}</td><td style="padding:7px 12px;border:1px solid #b8c8d4;font-size:14px;font-weight:bold;color:#0a0908;background:${bg};white-space:nowrap">${d.coverer}</td></tr>`;
+  }).join('');
+
+  const htmlDescription = [
+    '<html><body>',
+    `<p style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#0f0e0c;margin:0 0 12px">${greeting}</p>`,
+    `<p style="font-family:Calibri,Arial,sans-serif;font-size:14px;color:#0f0e0c;margin:0 0 16px">${firstName} has requested PTO from ${startFmt} through ${endFmt}. They will let you know if anything is due during this time.</p>`,
+    `<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;width:100%">${tableRows}</table>`,
+    daSplitHtml,
+    linksHtml,
+    '</body></html>'
+  ].join('');
+
+  // Escape special characters for ICS — order matters: \n and special chars first, backslash last
+  const escapeICS = str => str
+    .replace(/\n/g, '\\n')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,');
+  const plainDesc = `DESCRIPTION:${escapeICS(deptLines)}`;
+  const htmlDesc = `X-ALT-DESC;FMTTYPE=text/html:${htmlDescription.replace(/\r?\n/g,' ')}`;
+
+  const icsTitle = `${firstName} ${lastName} PTO ${startFmt} - ${endFmt}`;
+
+  // ORGANIZER — Robert Morrison is the fixed organizer for all invites
+  const organizerEmail = MANAGER_EMAILS['Morrison, Rob'] || 'rbmorrison@mgb.org';
+  const organizerName = 'Robert Morrison';
+  const organizerLine = `ORGANIZER;CN=${organizerName}:mailto:${organizerEmail}`;
+
+  // ── Coverage ICS ──
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//PTO Coverage Manager//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${now}`,
+    `DTSTART;VALUE=DATE:${icsDate(req.startDate)}`,
+    `DTEND;VALUE=DATE:${icsEndDate(req.endDate)}`,
+    `SUMMARY:${icsTitle}`,
+    plainDesc,
+    htmlDesc,
+    organizerLine,
+    attendeeLines,
+    'TRANSP:TRANSPARENT',
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  // ── Reminder ICS — 2 weeks before PTO start ──
+  const reminderDate = (() => {
+    const d = new Date(req.startDate + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() - 14);
+    // Move to Monday if weekend
+    if (d.getUTCDay() === 0) d.setUTCDate(d.getUTCDate() + 1);
+    if (d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() + 2);
+    return d.toISOString().split('T')[0];
+  })();
+  const reminderEndDate = icsEndDate(reminderDate);
+  const reminderUid = `reminder-${req.id}-${Date.now()}@pto-coverage-manager`;
+
+  // Reminder optional recipients — manager + Juliana if Harris
+  // Exclude Morrison since he is the ORGANIZER — adding organizer as attendee breaks Outlook
+  const reminderManagerEmail = MANAGER_EMAILS[member?.manager] || '';
+  const reminderManagerName = (member?.manager || '').replace(/,\s*/g, ' ');
+  const reminderOptLines = [];
+  if (reminderManagerEmail && member?.manager !== 'Morrison, Rob') {
+    reminderOptLines.push(`ATTENDEE;ROLE=OPT-PARTICIPANT;PARTSTAT=NEEDS-ACTION;CN=${reminderManagerName}:mailto:${reminderManagerEmail}`);
+  }
+  if (member?.manager === 'Harris, Alanna') {
+    const juliana = teamMembers.find(m => m.name === 'Juliana McWilliams');
+    if (juliana?.email) {
+      reminderOptLines.push(`ATTENDEE;ROLE=OPT-PARTICIPANT;PARTSTAT=NEEDS-ACTION;CN=Juliana McWilliams:mailto:${juliana.email}`);
+    }
+  }
+  const reminderAttendeeLines = [
+    `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=${memberName.replace(/,\s*/g,' ')}:mailto:${member?.email || 'noreply@pto-manager.local'}`,
+    ...reminderOptLines
+  ].join('\r\n');
+
+  const reminderTitle = `Reminder: ${firstName} PTO on ${startFmt} — Please notify your departments`;
+  const reminderPlainBody = `${reminderTitle}\n\nYour PTO begins in 2 weeks (${startFmt} – ${endFmt}). Please notify your departments as soon as possible so they are prepared.\n\nCoverage has been arranged. Please refer to the resources below for your coverage responsibilities and standard operating procedures.\n${linksPlain}`;
+  const reminderHtmlBody = [
+    '<html><body>',
+    `<p style="font-family:Calibri,Arial,sans-serif;font-size:14px;font-weight:bold;color:#0a0908;margin:0 0 12px">${reminderTitle}</p>`,
+    `<div style="background:#FAEEDA;border:1px solid #FAC775;border-radius:6px;padding:10px 14px;margin:0 0 12px;font-size:13px;color:#412402">`,
+    `Your PTO begins in <strong>2 weeks</strong> (${startFmt} – ${endFmt}). Please notify your departments as soon as possible so they are prepared.</div>`,
+    `<p style="font-family:Calibri,Arial,sans-serif;font-size:13px;color:#4a4844;margin:0 0 10px">Coverage has been arranged. Please refer to the resources below for your coverage responsibilities and standard operating procedures.</p>`,
+    linksHtml,
+    '</body></html>'
+  ].join('');
+
+  const reminderIcsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//PTO Coverage Manager//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${reminderUid}`,
+    `DTSTAMP:${now}`,
+    `DTSTART;VALUE=DATE:${icsDate(reminderDate)}`,
+    `DTEND;VALUE=DATE:${reminderEndDate}`,
+    `SUMMARY:${reminderTitle}`,
+    `DESCRIPTION:${escapeICS(reminderPlainBody)}`,
+    `X-ALT-DESC;FMTTYPE=text/html:${reminderHtmlBody.replace(/\r?\n/g,' ')}`,
+    `ORGANIZER;CN=${organizerName}:mailto:${organizerEmail}`,
+    reminderAttendeeLines,
+    'TRANSP:TRANSPARENT',
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  _inviteMailtoUrl = icsContent;
+  _inviteReminderUrl = reminderIcsContent;
+  _inviteFileName = `${memberName.replace(/\s+/g,'_').replace(/,/g,'')}_PTO_Coverage_${req.startDate}.ics`;
+  _inviteReminderFileName = `${memberName.replace(/\s+/g,'_').replace(/,/g,'')}_PTO_Reminder_${req.startDate}.ics`;
+
+  document.getElementById('invite-modal').classList.add('open');
+}
+
+function closeInviteModal() {
+  document.getElementById('invite-modal').classList.remove('open');
+  _invitePtoId = null;
+  _inviteMailtoUrl = null;
+  _inviteFileName = null;
+  _inviteReminderUrl = null;
+  _inviteReminderFileName = null;
+}
+
+function launchOutlook() {
+  function downloadBlob(content, filename) {
+    const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // Capture values locally BEFORE closeInviteModal nulls them out
+  const coverageContent = _inviteMailtoUrl;
+  const coverageFilename = _inviteFileName;
+  const reminderContent = _inviteReminderUrl;
+  const reminderFilename = _inviteReminderFileName;
+
+  closeInviteModal();
+
+  if (coverageContent && coverageFilename) {
+    downloadBlob(coverageContent, coverageFilename);
+  }
+  if (reminderContent && reminderFilename) {
+    setTimeout(() => downloadBlob(reminderContent, reminderFilename), 500);
+    showToast('✅ 2 files downloading — Coverage invite + 2-week reminder. Open both in Outlook and send.');
+  } else if (coverageContent) {
+    showToast('✅ Calendar invite downloaded — double-click the .ics file to open in Outlook.');
+  }
+}
+
+// ============================================================
+// EDIT DATES
+// ============================================================
+let _editDatesReqId = null;
+let _editDatesConflictingCoverers = [];
+let _editDatesKeepCoverers = true;
+
+function openEditDatesModal(reqId) {
+  const req = reqById(reqId);
+  if (!req) return;
+  _editDatesReqId = reqId;
+  _editDatesConflictingCoverers = [];
+  _editDatesKeepCoverers = true;
+
+  const m = memberById(req.memberId);
+  const assigns = coverageAssignments.filter(a => a.ptoRequestId === reqId);
+  const covererNames = assigns.map(a => {
+    const c = memberById(a.covererId);
+    return c ? c.name : 'Unknown';
+  }).join(', ');
+
+  document.getElementById('edit-dates-sub').innerHTML =
+    `<strong>${m?.name || 'Unknown'}</strong> &nbsp;·&nbsp; Current dates: ${req.startDate} → ${req.endDate}` +
+    (covererNames ? ` &nbsp;·&nbsp; Coverers: ${covererNames}` : '');
+  document.getElementById('edit-start-date').value = req.startDate;
+  document.getElementById('edit-end-date').value = req.endDate;
+  document.getElementById('edit-dates-preview').innerHTML = '';
+  document.getElementById('edit-dates-confirm-btn').disabled = true;
+  document.getElementById('edit-dates-modal').classList.add('open');
+  previewEditDates();
+}
+
+function previewEditDates() {
+  const req = reqById(_editDatesReqId);
+  if (!req) return;
+  const newStart = document.getElementById('edit-start-date').value;
+  const newEnd   = document.getElementById('edit-end-date').value;
+  const confirmBtn = document.getElementById('edit-dates-confirm-btn');
+  const preview = document.getElementById('edit-dates-preview');
+
+  if (!newStart || !newEnd) { preview.innerHTML = ''; confirmBtn.disabled = true; return; }
+  if (newEnd < newStart) {
+    preview.innerHTML = `<div class="error-banner">End date must be after start date.</div>`;
+    confirmBtn.disabled = true; return;
+  }
+  if (newStart === req.startDate && newEnd === req.endDate) {
+    preview.innerHTML = `<div class="info-banner">Dates are unchanged from the original request.</div>`;
+    confirmBtn.disabled = true; return;
+  }
+
+  // Check each existing coverer for conflicts on the NEW dates
+  const assigns = coverageAssignments.filter(a => a.ptoRequestId === req.id);
+  const conflicting = [];
+  const keeping = [];
+
+  assigns.forEach((a, idx) => {
+    const coverer = memberById(a.covererId);
+    if (!coverer) return;
+    const role = idx === 0 ? 'Primary' : 'Secondary';
+    // On PTO same dates?
+    const onPTO = ptoRequests.some(r =>
+      r.status === 'Approved' && r.memberId === a.covererId &&
+      r.id !== req.id && dateRangesOverlap(r.startDate, r.endDate, newStart, newEnd)
+    );
+    // Covering someone else same dates?
+    const coveringOther = coverageAssignments.some(x =>
+      x.covererId === a.covererId && x.ptoRequestId !== req.id && (() => {
+        const xReq = reqById(x.ptoRequestId);
+        return xReq && dateRangesOverlap(xReq.startDate, xReq.endDate, newStart, newEnd);
+      })()
+    );
+    // On leave?
+    const onLeave = isMemberUnavailableForRange(coverer, newStart, newEnd);
+    if (onPTO || coveringOther || onLeave) {
+      conflicting.push({ coverer, role, reason: onPTO ? 'on PTO' : onLeave ? 'on leave' : 'already covering someone else' });
+    } else {
+      keeping.push({ coverer, role });
+    }
+  });
+
+  _editDatesConflictingCoverers = conflicting;
+  _editDatesKeepCoverers = conflicting.length === 0;
+
+  const fmtDate = ds => new Date(ds + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  if (conflicting.length === 0) {
+    // All coverers available — keep them
+    preview.innerHTML = `
+      <div style="background:var(--success-soft);border:1px solid #9FE1CB;border-radius:var(--radius-sm);padding:0.85rem 1rem;font-size:0.875rem;color:var(--success);margin-bottom:0.75rem">
+        <strong>✅ No conflicts found</strong><br>
+        <span style="font-size:0.82rem">All current coverers are available ${fmtDate(newStart)}–${fmtDate(newEnd)}. Coverage will remain the same.</span>
+        <div style="margin-top:0.5rem">
+          ${keeping.map(k => `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:0.8rem">
+            <span>${k.coverer.name} <span style="color:var(--success);opacity:0.7">(${k.role})</span></span>
+            <span style="background:#c4edd9;color:#085041;border-radius:999px;padding:1px 8px;font-size:0.72rem;font-weight:600">Kept</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    confirmBtn.disabled = false;
+  } else {
+    // Some coverers conflict
+    preview.innerHTML = `
+      <div style="background:var(--pending-soft);border:1px solid #FAC775;border-radius:var(--radius-sm);padding:0.85rem 1rem;font-size:0.875rem;color:var(--pending);margin-bottom:0.75rem">
+        <strong>⚠️ Coverer conflict on new dates</strong><br>
+        <span style="font-size:0.82rem">The following coverers are unavailable ${fmtDate(newStart)}–${fmtDate(newEnd)}. They will be replaced automatically.</span>
+        <div style="margin-top:0.6rem">
+          ${conflicting.map(c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:0.8rem">
+            <span>${c.coverer.name} <span style="opacity:0.7">(${c.role})</span></span>
+            <span style="background:#fce8e6;color:#BC343E;border-radius:999px;padding:1px 8px;font-size:0.72rem;font-weight:600">Replaced — ${c.reason}</span>
+          </div>`).join('')}
+          ${keeping.map(k => `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:0.8rem">
+            <span>${k.coverer.name} <span style="opacity:0.7">(${k.role})</span></span>
+            <span style="background:#c4edd9;color:#085041;border-radius:999px;padding:1px 8px;font-size:0.72rem;font-weight:600">No conflict — kept</span>
+          </div>`).join('')}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:0.8rem;color:var(--info)">
+            <span>${conflicting.length} new coverer${conflicting.length > 1 ? 's' : ''} will be auto-assigned</span>
+            <span style="background:var(--info-soft);color:var(--info);border-radius:999px;padding:1px 8px;font-size:0.72rem;font-weight:600">New</span>
+          </div>
+        </div>
+      </div>`;
+    confirmBtn.disabled = false;
+  }
+}
+
+function confirmEditDates() {
+  const req = reqById(_editDatesReqId);
+  if (!req) return;
+  const newStart = document.getElementById('edit-start-date').value;
+  const newEnd   = document.getElementById('edit-end-date').value;
+  if (!newStart || !newEnd || newEnd < newStart) return;
+
+  const oldStart = req.startDate;
+  const oldEnd   = req.endDate;
+
+  // Save change log entry
+  if (!req.changeLog) req.changeLog = [];
+  const keepNames = _editDatesConflictingCoverers.length === 0
+    ? coverageAssignments.filter(a => a.ptoRequestId === req.id).map(a => memberById(a.covererId)?.name || '').filter(Boolean).join(', ')
+    : null;
+  req.changeLog.unshift({
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    from: `${oldStart} → ${oldEnd}`,
+    to:   `${newStart} → ${newEnd}`,
+    note: keepNames ? `Coverage kept: ${keepNames}` : `${_editDatesConflictingCoverers.length} coverer(s) replaced`
+  });
+
+  // Update dates
+  req.startDate = newStart;
+  req.endDate   = newEnd;
+
+  // Strip assignments and regenerate — replaceConflictingCoverers handles keeping valid ones
+  coverageAssignments = coverageAssignments.filter(a => a.ptoRequestId !== req.id);
+  // Re-add only the non-conflicting coverers directly
+  if (_editDatesKeepCoverers) {
+    // All coverers valid — keep them, just update if needed
+    coverageAssignments = generateCoverageAssignments(ptoRequests, coverageAssignments, teamMembers, req.override || false, false, false);
+  } else {
+    // Strip all, regenerate fresh
+    coverageAssignments = generateCoverageAssignments(ptoRequests, coverageAssignments, teamMembers, req.override || false, false, false);
+  }
+  // Run conflict replacement to handle edge cases
+  coverageAssignments = replaceConflictingCoverers(ptoRequests, coverageAssignments, teamMembers);
+
+  saveAll();
+  renderAll();
+  closeEditDatesModal();
+  showToast(`✅ PTO dates updated: ${newStart} → ${newEnd}. Coverage reassigned.`);
+}
+
+function closeEditDatesModal() {
+  document.getElementById('edit-dates-modal').classList.remove('open');
+  _editDatesReqId = null;
+  _editDatesConflictingCoverers = [];
+}
+// ============================================================
+// PTO DAYS TRACKER
+// ============================================================
+
+function countBusinessDays(startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+  const FEDERAL_HOLIDAYS = [
+    '2026-01-01','2026-01-19','2026-02-16','2026-05-25',
+    '2026-06-19','2026-07-04','2026-09-07','2026-10-12',
+    '2026-11-11','2026-11-26','2026-12-25'
+  ];
+  let count = 0;
+  const start = new Date(startDate + 'T00:00:00');
+  const end   = new Date(endDate   + 'T00:00:00');
+  const cur   = new Date(start);
+  while (cur <= end) {
+    const day = cur.getUTCDay();
+    const ds  = cur.toISOString().split('T')[0];
+    if (day !== 0 && day !== 6 && !FEDERAL_HOLIDAYS.includes(ds)) count++;
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return count;
+}
+
+function buildPTOTrackerData() {
+  const currentYear = new Date().getFullYear().toString();
+  const today = new Date();
+  const curMonth = today.getMonth();
+  const curYear  = today.getFullYear();
+
+  const windowMonths = [];
+  for (let i = -3; i <= 2; i++) {
+    let m = curMonth + i, y = curYear;
+    if (m < 0)  { m += 12; y--; }
+    if (m > 11) { m -= 12; y++; }
+    windowMonths.push({ month: m, year: y });
+  }
+
+  const approvedReqs = ptoRequests.filter(r => r.status === 'Approved');
+
+  return teamMembers.map(member => {
+    const reqs = approvedReqs.filter(r => r.memberId === member.id);
+    const yearly = { Vacation: 0, Medical: 0, Personal: 0, Unpaid: 0 };
+    reqs.forEach(r => {
+      if (r.startDate.startsWith(currentYear) || r.endDate.startsWith(currentYear)) {
+        const days = countBusinessDays(r.startDate, r.endDate);
+        if (yearly[r.type] !== undefined) yearly[r.type] += days;
+        else yearly.Vacation += days;
+      }
+    });
+
+    const monthDays = windowMonths.map(({ month, year }) => {
+      const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      let days = 0;
+      reqs.forEach(r => {
+        if (dateRangesOverlap(r.startDate, r.endDate, monthStart, monthEnd)) {
+          const s = r.startDate > monthStart ? r.startDate : monthStart;
+          const e = r.endDate   < monthEnd   ? r.endDate   : monthEnd;
+          days += countBusinessDays(s, e);
+        }
+      });
+      return days;
+    });
+
+    return { member, yearly, monthDays, windowMonths };
+  });
+}
+
+let _trackerOpen = false;
+let _trackerTab  = 'yearly';
+let _yearlySortCol = 'name';
+
+function togglePTOTracker() {
+  _trackerOpen = !_trackerOpen;
+  document.getElementById('pto-tracker-body').style.display = _trackerOpen ? 'block' : 'none';
+  document.getElementById('pto-tracker-chevron').style.transform = _trackerOpen ? 'rotate(180deg)' : '';
+  if (_trackerOpen) setTimeout(() => renderPTOTracker(), 0);
+}
+
+function switchTrackerTab(tab) {
+  _trackerTab = tab;
+  document.getElementById('tracker-panel-yearly').style.display = tab === 'yearly' ? 'block' : 'none';
+  document.getElementById('tracker-panel-window').style.display = tab === 'window' ? 'block' : 'none';
+
+  // Style tracker sub-tabs — use tracker-tab class (NOT tab-btn) to avoid main nav conflict
+  ['yearly','window'].forEach(t => {
+    const btn = document.getElementById('tracker-tab-' + t);
+    if (!btn) return;
+    const active = t === tab;
+    btn.style.borderBottom = active ? '2px solid var(--mgb-teal)' : '2px solid transparent';
+    btn.style.color = active ? 'var(--mgb-teal)' : 'var(--text3)';
+    btn.style.fontWeight = active ? '600' : '500';
+  });
+
+  if (tab === 'window') setTimeout(() => renderWindowTable(), 0);
+  if (tab === 'yearly') setTimeout(() => renderYearlyTable(_yearlySortCol), 0);
+}
+
+function renderPTOTracker() {
+  renderYearlyTable(_yearlySortCol);
+  if (_trackerTab === 'window') renderWindowTable();
+}
+
+function renderYearlyTable(sortCol) {
+  _yearlySortCol = sortCol;
+  const data = buildPTOTrackerData();
+  data.sort((a, b) => {
+    if (sortCol === 'name')  return a.member.name.localeCompare(b.member.name);
+    if (sortCol === 'total') return (b.yearly.Vacation+b.yearly.Medical+b.yearly.Personal+b.yearly.Unpaid) - (a.yearly.Vacation+a.yearly.Medical+a.yearly.Personal+a.yearly.Unpaid);
+    if (sortCol === 'vac')   return b.yearly.Vacation - a.yearly.Vacation;
+    return 0;
+  });
+
+  const totalTeamDays = data.reduce((s, d) => s + d.yearly.Vacation + d.yearly.Medical + d.yearly.Personal + d.yearly.Unpaid, 0);
+  const statEl = document.getElementById('tracker-stat-total');
+  if (statEl) statEl.textContent = totalTeamDays;
+
+  const maxDays = Math.max(1, ...data.map(d => d.yearly.Vacation + d.yearly.Medical + d.yearly.Personal + d.yearly.Unpaid));
+  const tbody = document.getElementById('tracker-yearly-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = data.map(({ member, yearly }) => {
+    const total = yearly.Vacation + yearly.Medical + yearly.Personal + yearly.Unpaid;
+    const barPct = Math.round(total / maxDays * 100);
+    const barColor = total === 0 ? 'var(--border)' : total <= 5 ? '#9FE1CB' : total <= 10 ? '#01828E' : '#016B76';
+    const cell = (val, bg, tx) => val > 0
+      ? `<span style="background:${bg};color:${tx};border-radius:4px;padding:2px 6px;font-size:0.75rem;font-weight:500">${val}</span>`
+      : `<span style="color:var(--text3)">—</span>`;
+    return `<tr>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border)">
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${member.managerColor};margin-right:6px;vertical-align:middle"></span>${member.name}
+      </td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:0.78rem;color:var(--text3)">${member.manager.split(',')[0]}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center">${cell(yearly.Vacation,'#E6F1FB','#0C447C')}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center">${cell(yearly.Medical,'#FAEEDA','#633806')}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center">${cell(yearly.Personal,'#EAF3DE','#27500A')}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center">${cell(yearly.Unpaid,'#FCEBEB','#791F1F')}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:5px;background:var(--border);border-radius:999px;overflow:hidden">
+            <div style="width:${barPct}%;height:100%;background:${barColor};border-radius:999px"></div>
+          </div>
+          <span style="font-size:0.82rem;font-weight:500;min-width:20px;text-align:right">${total}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderWindowTable() {
+  const data = buildPTOTrackerData();
+  if (!data.length) return;
+  const windowMonths = data[0].windowMonths;
+  const today = new Date();
+  const curMonth = today.getMonth();
+  const curYear  = today.getFullYear();
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const thead = document.getElementById('tracker-window-head');
+  if (!thead) return;
+  const headerCells = windowMonths.map(({ month, year }) => {
+    const isCurrent = month === curMonth && year === curYear;
+    const bg = isCurrent ? '#E1F5EE' : 'var(--surface2)';
+    const tx = isCurrent ? '#085041' : 'var(--text3)';
+    const label = isCurrent ? `${monthNames[month]} ▶` : monthNames[month];
+    return `<th style="padding:7px 8px;text-align:center;font-size:0.72rem;font-weight:500;color:${tx};background:${bg};border-bottom:1px solid var(--border);width:60px">${label}</th>`;
+  }).join('');
+  thead.innerHTML = `<tr>
+    <th style="padding:7px 10px;text-align:left;font-size:0.72rem;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;background:var(--surface2);border-bottom:1px solid var(--border);width:160px">Member</th>
+    <th style="padding:7px 10px;text-align:left;font-size:0.72rem;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;background:var(--surface2);border-bottom:1px solid var(--border);width:90px">Manager</th>
+    ${headerCells}
+    <th style="padding:7px 10px;text-align:center;font-size:0.72rem;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;background:var(--surface2);border-bottom:1px solid var(--border);width:65px">Total</th>
+  </tr>`;
+
+  const tbody = document.getElementById('tracker-window-body');
+  if (!tbody) return;
+  data.sort((a, b) => a.member.name.localeCompare(b.member.name));
+  tbody.innerHTML = data.map(({ member, monthDays }) => {
+    const total = monthDays.reduce((s, d) => s + d, 0);
+    const cells = monthDays.map((days, i) => {
+      const { month, year } = windowMonths[i];
+      const isCurrent = month === curMonth && year === curYear;
+      const curBg = isCurrent ? 'background:#f0faf9;' : '';
+      if (days === 0) return `<td style="padding:6px 4px;text-align:center;border-bottom:1px solid var(--border);${curBg}"><span style="color:var(--text3);font-size:0.78rem">—</span></td>`;
+      const bg = days <= 2 ? '#E1F5EE' : days <= 4 ? '#9FE1CB' : '#01828E';
+      const tx = days <= 4 ? '#04342C' : '#ffffff';
+      return `<td style="padding:6px 4px;text-align:center;border-bottom:1px solid var(--border);${curBg}">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:22px;border-radius:4px;font-size:0.78rem;font-weight:500;background:${bg};color:${tx}">${days}</span>
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap">
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${member.managerColor};margin-right:6px;vertical-align:middle"></span>${member.name}
+      </td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:0.78rem;color:var(--text3)">${member.manager.split(',')[0]}</td>
+      ${cells}
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;font-weight:500">${total > 0 ? total : '<span style="color:var(--text3)">0</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportPTOTrackerCSV() {
+  const data = buildPTOTrackerData();
+  const today = new Date();
+  const curYear  = today.getFullYear();
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  let csv1 = 'PTO Yearly Summary ' + curYear + '\n';
+  csv1 += 'Member,Manager,Vacation,Medical,Personal,Unpaid,Total\n';
+  data.sort((a,b) => a.member.name.localeCompare(b.member.name)).forEach(({ member, yearly }) => {
+    const total = yearly.Vacation + yearly.Medical + yearly.Personal + yearly.Unpaid;
+    csv1 += `"${member.name}","${member.manager}",${yearly.Vacation},${yearly.Medical},${yearly.Personal},${yearly.Unpaid},${total}\n`;
+  });
+
+  const windowMonths = data[0]?.windowMonths || [];
+  const monthHeaders = windowMonths.map(({ month, year }) => `"${monthNames[month]} ${year}"`).join(',');
+  let csv2 = '\n6-Month Rolling Window\n';
+  csv2 += `Member,Manager,${monthHeaders},Total\n`;
+  data.forEach(({ member, monthDays }) => {
+    const total = monthDays.reduce((s,d) => s+d, 0);
+    csv2 += `"${member.name}","${member.manager}",${monthDays.join(',')},${total}\n`;
+  });
+
+  const blob = new Blob([csv1 + csv2], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `PTO_Tracker_${curYear}.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('✅ PTO tracker exported — yearly and 6-month views included.');
+}
+
+function exportJSON() {
+  const data = { teamMembers, ptoRequests, coverageAssignments, scores: calculateScore(teamMembers, ptoRequests, coverageAssignments, 'days', new Date().toISOString().split('T')[0]) };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'pto-coverage-data.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function exportExcel() {
+  const rows = [['Member','Start','End','Type','Status','Override','Coverers']];
+  ptoRequests.forEach(req => {
+    const m = memberById(req.memberId);
+    const covs = coverageAssignments.filter(a => a.ptoRequestId === req.id).map(a => memberById(a.covererId)?.name || '?').join('; ');
+    rows.push([m?.name || '', req.startDate, req.endDate, req.type, req.status, req.override ? 'Yes' : 'No', covs]);
+  });
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'pto-coverage.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function handleImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('import-status');
+  if (file.name.toLowerCase().endsWith('.json')) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        if (Array.isArray(parsed.teamMembers)) teamMembers = parsed.teamMembers.map(m => ({ ...m, isCoverageAvailable: m.isCoverageAvailable !== false, coverageLeaveStart: m.coverageLeaveStart || '', coverageLeaveEnd: m.coverageLeaveEnd || '' }));
+        if (Array.isArray(parsed.ptoRequests)) { ptoRequests = parsed.ptoRequests; nextPtoId = ptoRequests.reduce((max, r) => Math.max(max, r.id), 0) + 1; }
+        if (Array.isArray(parsed.coverageAssignments)) { coverageAssignments = replaceConflictingCoverers(ptoRequests, parsed.coverageAssignments, teamMembers); nextCovId = coverageAssignments.reduce((max, a) => Math.max(max, a.id), 0) + 1; }
+        status.textContent = '✅ JSON imported successfully.'; status.style.color = 'var(--accent)';
+        saveAll(); renderAll();
+      } catch(err) { status.textContent = '❌ Invalid JSON file.'; status.style.color = 'var(--danger)'; }
+    };
+    reader.readAsText(file);
+  } else {
+    status.textContent = '⚠️ Only JSON import supported in this version.';
+    status.style.color = 'var(--pending)';
+  }
+  input.value = '';
+}
+
+// ============================================================
+// INIT — only event listeners go inside DOMContentLoaded
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('pto-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const memberId = parseInt(document.getElementById('f-member').value);
+    const startDate = document.getElementById('f-start').value;
+    const endDate = document.getElementById('f-end').value;
+    const type = document.getElementById('f-type').value;
+    const override = document.getElementById('f-override').checked;
+
+    if (!startDate || !endDate || startDate > endDate) { showError('Invalid date range.'); return; }
+    if (!override && isInBlackout(startDate, endDate)) {
+      showError('⛔ These dates fall in a blackout period (week before 2/5, 6/5, or 10/5). Use Override or choose different dates.');
+      return;
+    }
+    ptoRequests.push({ id: nextPtoId++, memberId, startDate, endDate, type, status: 'Pending', override });
+    e.target.reset();
+    document.getElementById('f-member').value = teamMembers[0]?.id;
+    saveAll();
+    renderAll();
+    showToast('✅ PTO request created successfully.');
+  });
+
+  document.getElementById('pw-modal').addEventListener('click', function(e) {
+    if (e.target === this) closePwModal();
+  });
+  document.getElementById('confirm-modal').addEventListener('click', function(e) {
+    if (e.target === this) confirmResolve(false);
+  });
+  document.getElementById('invite-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeInviteModal();
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'calendar') renderCalendar();
+      if (btn.dataset.tab === 'score') renderScores();
+      if (btn.dataset.tab === 'admin') renderAvailAdmin();
+    });
+  });
+
+  loadAll();
+  healUnderCoveredRequests();
+  renderMemberSelect();
+  renderBlackoutDates();
+  renderAll();
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
